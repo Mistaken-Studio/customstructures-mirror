@@ -1,9 +1,12 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="PluginHandler.cs" company="Mistaken">
+// <copyright file="CustomStructuresHandler.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
+using System.IO;
 using AdminToys;
 using Exiled.API.Enums;
 using Exiled.API.Features;
@@ -13,16 +16,14 @@ using Interactables.Interobjects.DoorUtils;
 using Mirror;
 using Mistaken.API.Diagnostics;
 using Mistaken.API.Extensions;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures
 {
     public class CustomStructuresHandler : Module
     {
-        public CustomStructuresHandler(IPlugin<IConfig> plugin) : base(plugin)
+        public CustomStructuresHandler(IPlugin<IConfig> plugin)
+            : base(plugin)
         {
         }
 
@@ -36,13 +37,14 @@ namespace Mistaken.CustomStructures
         public override void OnEnable()
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
+
             // var watcher = new FileSystemWatcher(Path.Combine(Paths.Plugins, "AssetBoundle"));
             // watcher.Changed += Watcher_Changed;
         }
 
         private void Server_WaitingForPlayers()
         {
-            //var boundles = LoadBoundles(Path.Combine(Paths.Plugins, "AssetBoundle"));
+            // var boundles = LoadBoundles(Path.Combine(Paths.Plugins, "AssetBoundle"));
 
             var bridge1 = new GameObject();
             bridge1.transform.position = new Vector3(75.28f, 1000 - 7.289f, -49.5f);
@@ -69,7 +71,7 @@ namespace Mistaken.CustomStructures
             surfaceGateATunnelElevatorDoor.transform.position = new Vector3(0, 1000, 0);
             LoadBoundle("surface_gatea_tunnel_elevator_door", surfaceGateATunnelElevatorDoor.transform);
 
-            //foreach (var item in boundles)
+            // foreach (var item in boundles)
             //    item.Unload(false);
         }
 
@@ -100,7 +102,7 @@ namespace Mistaken.CustomStructures
                 return null;
             }
 
-            //GameObject.Instantiate(prefab);
+            // GameObject.Instantiate(prefab);
 
             var toy = ConvertToToy(prefab, parent);
             boundle.Unload(false);

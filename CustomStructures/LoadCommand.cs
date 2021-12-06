@@ -1,15 +1,15 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="AfkCommand.cs" company="Mistaken">
+// <copyright file="LoadCommand.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.IO;
 using AdminToys;
 using CommandSystem;
 using Exiled.API.Features;
 using Mistaken.API.Commands;
 using Mistaken.API.Extensions;
-using System.IO;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures

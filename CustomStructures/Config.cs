@@ -4,8 +4,8 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using Mistaken.Updater.Config;
 using System.ComponentModel;
+using Mistaken.Updater.Config;
 
 namespace Mistaken.CustomStructures
 {
