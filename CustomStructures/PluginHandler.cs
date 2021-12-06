@@ -34,6 +34,8 @@ namespace Mistaken.CustomStructures
         {
             Instance = this;
 
+            new HarmonyLib.Harmony("mistaken.customstructures").PatchAll();
+
             new CustomStructuresHandler(this);
 
             API.Diagnostics.Module.OnEnable(this);
