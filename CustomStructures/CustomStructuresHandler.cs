@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using AdminToys;
 using Exiled.API.Enums;
 using Exiled.API.Features;
@@ -19,10 +20,9 @@ using InventorySystem.Items.Firearms.Ammo;
 using Mirror;
 using Mistaken.API.Diagnostics;
 using Mistaken.API.Extensions;
-using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Mistaken.CustomStructures //V3
+namespace Mistaken.CustomStructures // V3
 {
     public class CustomStructuresHandler : Module
     {
