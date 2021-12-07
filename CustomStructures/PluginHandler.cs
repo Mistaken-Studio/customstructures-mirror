@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Mistaken.API.Diagnostics;
-using System;
 
 namespace Mistaken.CustomStructures
 {
