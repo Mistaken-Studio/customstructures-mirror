@@ -19,9 +19,6 @@ using InventorySystem.Items.Firearms.Ammo;
 using Mirror;
 using Mistaken.API.Diagnostics;
 using Mistaken.API.Extensions;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 
