@@ -148,7 +148,15 @@ namespace Mistaken.CustomStructures //V3
         {
             Assets.Clear();
             foreach (var asset in GetAssets())
-                Assets.Add(asset.name, asset);
+            {
+                Assets.Add(
+                    asset.name,
+                    new Asset
+                {
+                    Prefab = asset,
+                    AssetName = asset.name,
+                });
+            }
         }
 
         public static GameObject SpawnAsset(string name, Transform parent = null)
