@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Mistaken.CustomStructures
 {
-    internal abstract class DestructionInformerScript : MonoBehaviour
+    internal class DestructionInformerScript : MonoBehaviour
     {
         public event Action<GameObject> OnDestroyed;
 

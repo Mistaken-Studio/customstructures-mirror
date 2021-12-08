@@ -9,7 +9,6 @@ using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
 {
-
     internal abstract class SingleAssetHandler : AssetHandler
     {
         protected Asset Asset { get; private set; }

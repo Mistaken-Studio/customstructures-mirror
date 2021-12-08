@@ -133,7 +133,7 @@ namespace Mistaken.CustomStructures
                                 {
                                     var item = new Ammo(itemType);
                                     item.Scale = tor.transform.localScale;
-                                    (item.Spawn(tor.transform.position, tor.transform.rotation).Base as AmmoPickup).NetworkSavedAmmo = ushort.Parse(args[2]);
+                                    (item.Spawn(tor.transform.position, tor.transform.rotation).Base as AmmoPickup).NetworkSavedAmmo = ushort.Parse(args[2].Split(' ')[0]);
                                     break;
                                 }
 

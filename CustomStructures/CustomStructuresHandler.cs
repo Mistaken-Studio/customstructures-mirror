@@ -183,7 +183,7 @@ namespace Mistaken.CustomStructures
         private MapModType GenerateMapMods()
         {
             ulong random = this.GenerateRandomULong(new System.Random());
-            random >>= 64 - 10;
+            random >>= 63 - 10;
 
             MapModType flags = this.ValidateMapMods((MapModType)random);
 
@@ -217,10 +217,12 @@ namespace Mistaken.CustomStructures
         {
             ulong modUl = (ulong)mod;
             List<AssetType> assets = new List<AssetType>();
+            Exiled.API.Features.Log.Debug(mod, true);
             for (int i = 0; i < 64; i++)
             {
-                if (((modUl >> (63 - i)) & 1) != 0)
+                if (((modUl >> i) & 1) != 0)
                 {
+                    Exiled.API.Features.Log.Debug(i + "|" + (MapModType)(1ul << i), true);
                     switch ((MapModType)(1ul << i))
                     {
                         case MapModType.SURFACE_GATEA_MIDDLE_TOWER:
@@ -251,7 +253,8 @@ namespace Mistaken.CustomStructures
                             assets.Add(AssetType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER);
                             break;
                         default:
-                            throw new ArgumentException($"Unknown {nameof(MapModType)} ({(MapModType)(1ul << i)})");
+                            break;
+                            //throw new ArgumentException($"Unknown {nameof(MapModType)} ({(MapModType)(1ul << i)})");
                     }
                 }
             }
@@ -363,6 +366,11 @@ namespace Mistaken.CustomStructures
             ReloadAssets();
 
             Dictionary<AssetType, (GameObject obj, Asset asset)> spawnedAssets = new Dictionary<AssetType, (GameObject obj, Asset asset)>();
+            foreach (var item in this.alwaysLoaded)
+            {
+                spawnedAssets[item] = this.LoadAsset(item);
+            }
+
             foreach (var item in this.ParseMapMods(this.GenerateMapMods()))
             {
                 spawnedAssets[item] = this.LoadAsset(item);

@@ -4,6 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using Exiled.API.Features;
 using Interactables.Interobjects.DoorUtils;
@@ -12,15 +13,14 @@ using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
 {
-
     internal class SurfaceGateATowerElevatorHandler : LinkedAssetHandler
     {
         protected override AssetType AssetType => AssetType.SURFACE_GATEA_TOWER_ELEVATOR_BOTTOM;
 
         protected override AssetType OtherAssetType => AssetType.SURFACE_GATEA_TOWER_ELEVATOR_TOP;
 
-        private BoxCollider BottomTrigger;
-        private BoxCollider TopTrigger;
+        private Transform BottomTrigger;
+        private Transform TopTrigger;
         private Vector3 Offset;
 
         private DoorVariant BottomDoor;
@@ -33,12 +33,37 @@ namespace Mistaken.CustomStructures.AssetHandlers
         {
             base.Initialize(spawned, asset, otherSpawned, otherAsset);
 
-            this.BottomTrigger = spawned.transform.Find("Trigger").GetComponent<BoxCollider>();
-            this.TopTrigger = otherSpawned.transform.Find("Trigger").GetComponent<BoxCollider>();
+            this.BottomTrigger = spawned.transform.Find("Trigger");
+            if (this.BottomTrigger == null)
+                throw new ArgumentNullException("BottomTrigger");
+            this.TopTrigger = otherSpawned.transform.Find("Trigger");
+            if (this.TopTrigger == null)
+                throw new ArgumentNullException("TopTrigger");
             this.Offset = this.TopTrigger.transform.position - this.BottomTrigger.transform.position;
 
-            this.BottomDoor = asset.Doors[spawned.transform.Find("LCZ_DOOR").gameObject];
-            this.TopDoor = asset.Doors[otherSpawned.transform.Find("LCZ_DOOR").gameObject];
+            foreach (var item in spawned.GetComponentsInChildren<Transform>())
+            {
+                if (item.name == "LCZ_DOOR")
+                {
+                    this.BottomDoor = asset.Doors[item.gameObject];
+                    break;
+                }
+            }
+
+            if (this.BottomDoor == null)
+                throw new ArgumentNullException("this.BottomDoor");
+
+            foreach (var item in otherSpawned.GetComponentsInChildren<Transform>())
+            {
+                if (item.name == "LCZ_DOOR")
+                {
+                    this.TopDoor = asset.Doors[item.gameObject];
+                    break;
+                }
+            }
+
+            if (this.TopDoor == null)
+                throw new ArgumentNullException("this.TopDoor");
 
             this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.BottomDoor.NetworkTargetState = true;
