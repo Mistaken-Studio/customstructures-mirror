@@ -68,7 +68,7 @@
     <Compile Include="PluginHandler.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SCPVoiceChatPatch.cs" />
+    <Compile Include="SyncLossyNotLocalScale.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

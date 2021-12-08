@@ -8,43 +8,117 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using AdminToys;
-using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Items;
 using Exiled.API.Interfaces;
-using Footprinting;
-using Interactables.Interobjects.DoorUtils;
-using InventorySystem.Items.Firearms;
-using InventorySystem.Items.Firearms.Ammo;
 using Mirror;
 using Mistaken.API.Diagnostics;
-using Mistaken.API.Extensions;
 using UnityEngine;
 
-namespace Mistaken.CustomStructures // V3
+namespace Mistaken.CustomStructures
 {
+    /// <inheritdoc/>
     public class CustomStructuresHandler : Module
     {
+        /// <summary>
+        /// Assets bound to their name.
+        /// </summary>
+        public static readonly Dictionary<string, Asset> Assets = new Dictionary<string, Asset>();
+
+        /// <summary>
+        /// Reloads <see cref="Assets"/>.
+        /// </summary>
+        public static void ReloadAssets()
+        {
+            Assets.Clear();
+            foreach (var asset in GetAssets())
+            {
+                Assets[asset.name.ToLower()] = new Asset
+                {
+                    Prefab = asset,
+                    AssetName = asset.name,
+                };
+            }
+        }
+
+        /// <summary>
+        /// Spawns asset
+        /// </summary>
+        /// <param name="name">Asset name</param>
+        /// <param name="parent">Parent if there is</param>
+        /// <returns>Spawn asset</returns>
+        /// <exception cref="ArgumentException">If asset with <paramref name="name"/> was not found</exception>
+        public static GameObject SpawnAsset(string name, Transform parent = null)
+        {
+            if (!Assets.TryGetValue(name.ToLower(), out var asset))
+            {
+                throw new ArgumentException($"Unknown Asset name \"{name}\"", nameof(name));
+            }
+
+            var spawned = asset.Spawn(parent);
+
+            Exiled.API.Features.Log.Debug($"Loaded {name}", true);
+
+            return spawned;
+        }
+
+        /// <inheritdoc cref="Module.Module(IPlugin{IConfig})"/>
         public CustomStructuresHandler(IPlugin<IConfig> plugin)
             : base(plugin)
         {
         }
 
+        /// <inheritdoc/>
         public override string Name => "CustomStructuresHandler";
 
+        /// <inheritdoc/>
         public override void OnDisable()
         {
-            // throw new NotImplementedException();
+            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
+            Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
         }
 
+        /// <inheritdoc/>
         public override void OnEnable()
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
+        }
 
-            // var watcher = new FileSystemWatcher(Path.Combine(Paths.Plugins, "AssetBoundle"));
-            // watcher.Changed += Watcher_Changed;
+        private static IEnumerable<AssetBundle> LoadBoundles(string files)
+        {
+            List<AssetBundle> tor = new List<AssetBundle>();
+            foreach (var item in Directory.GetFiles(files))
+            {
+                tor.Add(AssetBundle.LoadFromFile(item));
+            }
+
+            foreach (var item in Directory.GetDirectories(files))
+            {
+                tor.AddRange(LoadBoundles(item));
+            }
+
+            return tor;
+        }
+
+        private static IEnumerable<GameObject> GetAssets()
+        {
+            if (!Directory.Exists(Path.Combine(Paths.Plugins, "AssetBoundle")))
+            {
+                Exiled.API.Features.Log.Warn($"{Path.Combine(Paths.Plugins, "AssetBoundle")} was not found, creating ...");
+                Directory.CreateDirectory(Path.Combine(Paths.Plugins, "AssetBoundle"));
+                return new GameObject[0];
+            }
+
+            var boundles = LoadBoundles(Path.Combine(Paths.Plugins, "AssetBoundle"));
+            List<GameObject> assets = new List<GameObject>();
+
+            foreach (var boundle in boundles)
+                assets.AddRange(boundle.LoadAllAssets<GameObject>());
+
+            foreach (var boundle in boundles)
+                boundle.Unload(false);
+
+            return assets;
         }
 
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
@@ -129,65 +203,6 @@ namespace Mistaken.CustomStructures // V3
             surfaceCICar.transform.position = new Vector3(0, 1000, 0);
             SpawnAsset("surface_cicar", surfaceCICar.transform);
             Task.Delay(5).Wait();
-        }
-
-        private static IEnumerable<AssetBundle> LoadBoundles(string files)
-        {
-            List<AssetBundle> tor = new List<AssetBundle>();
-            foreach (var item in Directory.GetFiles(files))
-            {
-                tor.Add(AssetBundle.LoadFromFile(item));
-            }
-
-            foreach (var item in Directory.GetDirectories(files))
-            {
-                tor.AddRange(LoadBoundles(item));
-            }
-
-            return tor;
-        }
-
-        private static IEnumerable<GameObject> GetAssets()
-        {
-            var boundles = LoadBoundles(Path.Combine(Paths.Plugins, "AssetBoundle"));
-            List<GameObject> assets = new List<GameObject>();
-
-            foreach (var boundle in boundles)
-                assets.AddRange(boundle.LoadAllAssets<GameObject>());
-
-            foreach (var boundle in boundles)
-                boundle.Unload(false);
-
-            return assets;
-        }
-
-        public static readonly Dictionary<string, Asset> Assets = new Dictionary<string, Asset>();
-
-        public static void ReloadAssets()
-        {
-            Assets.Clear();
-            foreach (var asset in GetAssets())
-            {
-                Assets[asset.name.ToLower()] = new Asset
-                {
-                    Prefab = asset,
-                    AssetName = asset.name,
-                };
-            }
-        }
-
-        public static GameObject SpawnAsset(string name, Transform parent = null)
-        {
-            if (!Assets.TryGetValue(name.ToLower(), out var asset))
-            {
-                throw new ArgumentException($"Unknown Asset name \"{name}\"", nameof(name));
-            }
-
-            var spawned = asset.Spawn(parent);
-
-            Exiled.API.Features.Log.Debug($"Loaded {name}", true);
-
-            return spawned;
         }
     }
 }

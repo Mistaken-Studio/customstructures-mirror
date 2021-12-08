@@ -21,14 +21,33 @@ using UnityEngine;
 // but modified to allow for spawning items, doors, shooting targets
 namespace Mistaken.CustomStructures
 {
+    /// <summary>
+    /// Represents asset.
+    /// </summary>
     public class Asset
     {
-        public readonly Dictionary<GameObject, List<GameObject>> SpawnedChildren = new Dictionary<GameObject, List<GameObject>>();
+        /// <summary>
+        /// Spawned objects bound to top asset.
+        /// </summary>
+        public Dictionary<GameObject, List<GameObject>> SpawnedChildren { get; } = new Dictionary<GameObject, List<GameObject>>();
 
+        /// <summary>
+        /// Asset name.
+        /// </summary>
         public string AssetName { get; set; }
 
+        /// <summary>
+        /// Asset prefab
+        /// </summary>
         public GameObject Prefab { get; set; }
 
+        /// <summary>
+        /// Spawns asset
+        /// </summary>
+        /// <param name="position">Position</param>
+        /// <param name="eulerAngles">Rotation as eulerAngles</param>
+        /// <param name="scale">Scale</param>
+        /// <returns>Spawned asset</returns>
         public GameObject Spawn(Vector3 position, Vector3 eulerAngles, Vector3 scale)
         {
             var tor = new GameObject();
@@ -39,10 +58,11 @@ namespace Mistaken.CustomStructures
             return tor;
         }
 
-        internal static readonly Dictionary<DoorVariant, Animator> ConnectedAnimators = new Dictionary<DoorVariant, Animator>();
-        internal static readonly HashSet<DoorVariant> RemovePostUse = new HashSet<DoorVariant>();
-        internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
-
+        /// <summary>
+        /// Spawns asset
+        /// </summary>
+        /// <param name="parent">Parent</param>
+        /// <returns>Spawned asset</returns>
         public GameObject Spawn(Transform parent)
         {
             var prefabObject = UnityEngine.Object.Instantiate(this.Prefab, parent);
@@ -60,12 +80,11 @@ namespace Mistaken.CustomStructures
                 if (!transform.gameObject.activeSelf)
                     continue;
                 if (
-                    (transform.name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase)) ||
-                    (transform.name.StartsWith("HCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) ||
-                    (transform.name.StartsWith("EZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) ||
-                    (transform.name.StartsWith("LCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) ||
-                    (transform.name.StartsWith("TARGET_DBOY", StringComparison.InvariantCultureIgnoreCase))
-                    )
+                    transform.name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase) ||
+                    transform.name.StartsWith("HCZ_DOOR", StringComparison.InvariantCultureIgnoreCase) ||
+                    transform.name.StartsWith("EZ_DOOR", StringComparison.InvariantCultureIgnoreCase) ||
+                    transform.name.StartsWith("LCZ_DOOR", StringComparison.InvariantCultureIgnoreCase) ||
+                    transform.name.StartsWith("TARGET_DBOY", StringComparison.InvariantCultureIgnoreCase))
                 {
                     foreach (var item in transform.GetComponentsInChildren<Transform>())
                     {
@@ -250,7 +269,14 @@ namespace Mistaken.CustomStructures
             return prefabObject;
         }
 
-        public static PrimitiveObjectToy PrimitiveBaseObject
+        internal static readonly Dictionary<DoorVariant, Animator> ConnectedAnimators = new Dictionary<DoorVariant, Animator>();
+        internal static readonly HashSet<DoorVariant> RemovePostUse = new HashSet<DoorVariant>();
+        internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
+
+        private static LightSourceToy primitiveBaseLight = null;
+        private static PrimitiveObjectToy primitiveBaseObject = null;
+
+        private static PrimitiveObjectToy PrimitiveBaseObject
         {
             get
             {
@@ -267,7 +293,7 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        public static LightSourceToy PrimitiveBaseLight
+        private static LightSourceToy PrimitiveBaseLight
         {
             get
             {
@@ -284,7 +310,7 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        public static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
+        private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
         {
             AdminToyBase toy = UnityEngine.Object.Instantiate(PrimitiveBaseObject, parent);
             PrimitiveObjectToy ptoy = toy.GetComponent<PrimitiveObjectToy>();
@@ -300,7 +326,7 @@ namespace Mistaken.CustomStructures
             return ptoy;
         }
 
-        public static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)
+        private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)
         {
             AdminToyBase toy = UnityEngine.Object.Instantiate(PrimitiveBaseLight, parent);
             LightSourceToy ptoy = toy.GetComponent<LightSourceToy>();
@@ -316,7 +342,7 @@ namespace Mistaken.CustomStructures
             return ptoy;
         }
 
-        public static GameObject CreateEmpty(Transform parent)
+        private static GameObject CreateEmpty(Transform parent)
         {
             GameObject tor = new GameObject();
             tor.transform.parent = parent;
@@ -325,8 +351,5 @@ namespace Mistaken.CustomStructures
             tor.transform.localScale = Vector3.one;
             return tor;
         }
-
-        private static LightSourceToy primitiveBaseLight = null;
-        private static PrimitiveObjectToy primitiveBaseObject = null;
     }
 }

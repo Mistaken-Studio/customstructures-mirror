@@ -7,12 +7,12 @@
 using System;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Mistaken.API.Diagnostics;
+using HarmonyLib;
 
 namespace Mistaken.CustomStructures
 {
     /// <inheritdoc/>
-    public class PluginHandler : Plugin<Config>
+    internal class PluginHandler : Plugin<Config>
     {
         /// <inheritdoc/>
         public override string Author => "Mistaken Devs";
@@ -34,7 +34,8 @@ namespace Mistaken.CustomStructures
         {
             Instance = this;
 
-            new HarmonyLib.Harmony("mistaken.customstructures").PatchAll();
+            harmony = new HarmonyLib.Harmony("mistaken.customstructures");
+            harmony.PatchAll();
 
             new CustomStructuresHandler(this);
 
@@ -52,5 +53,7 @@ namespace Mistaken.CustomStructures
         }
 
         internal static PluginHandler Instance { get; private set; }
+
+        private Harmony harmony;
     }
 }
