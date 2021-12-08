@@ -137,6 +137,217 @@ namespace Mistaken.CustomStructures
             return assets;
         }
 
+        private static bool HasFlag(MapModType type, MapModType flag) => (type & flag) != 0;
+
+        private readonly AssetType[] alwaysLoaded = new AssetType[]
+        {
+             AssetType.SURFACE_GATEA_TOWER_SCP1499_CHAMBER,
+             AssetType.SURFACE_GATEA_TOWER_ELEVATOR_BOTTOM,
+             AssetType.SURFACE_GATEA_TOWER_ELEVATOR_TOP,
+             AssetType.SURFACE_CICAR,
+        };
+
+        private enum AssetType
+        {
+            UNKNOWN = -1,
+            SURFACE_GATEB_BRIDGE_FORWARD,
+            SURFACE_GATEB_BRIDGE_LEFT,
+            SURFACE_GATEB_BRIDGE_LEFT_BUNKER,
+            SURFACE_GATEB_BRIDGE_CONNECTOR,
+            SURFACE_GATEA_STAIRS_LOCK,
+            SURFACE_GATEA_TUNNEL_CI_DOOR,
+            SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED,
+            SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR,
+            SURFACE_GATEA_TOWER_ELEVATOR_BOTTOM,
+            SURFACE_GATEA_TOWER_ELEVATOR_TOP,
+            SURFACE_GATEA_TOWER_SCP1499_CHAMBER,
+            SURFACE_GATEA_TOWER_ARMORY,
+            SURFACE_CICAR,
+            SURFACE_GATEA_MIDDLE_TOWER,
+        }
+
+        [Flags]
+        private enum MapModType : ulong
+        {
+            SURFACE_GATEB_BRIDGE_FORWARD = 1ul << 0,
+            SURFACE_GATEB_BRIDGE_LEFT = 1ul << 1,
+            SURFACE_GATEB_BRIDGE_LEFT_BUNKER = 1ul << 2,
+            SURFACE_GATEA_STAIRS_LOCK = 1ul << 4,
+            SURFACE_GATEA_TUNNEL_CI_DOOR = 1ul << 5,
+            SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED = 1ul << 6,
+            SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR = 1ul << 7,
+            SURFACE_GATEA_TOWER_ARMORY = 1ul << 8,
+            SURFACE_GATEA_MIDDLE_TOWER = 1ul << 9,
+        }
+
+        private ulong GenerateRandomULong(System.Random rng)
+        {
+            byte[] buf = new byte[8];
+            rng.NextBytes(buf);
+            ulong ulongRand = BitConverter.ToUInt64(buf, 0);
+
+            return ulongRand;
+        }
+
+        private MapModType GenerateMapMods()
+        {
+            ulong random = this.GenerateRandomULong(new System.Random());
+            random >>= 64 - 10;
+
+            MapModType flags = this.ValidateMapMods((MapModType)random);
+
+            return flags;
+        }
+
+        private MapModType ValidateMapMods(MapModType input)
+        {
+            if (HasFlag(input, MapModType.SURFACE_GATEB_BRIDGE_LEFT))
+            {
+                if (HasFlag(input, MapModType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER))
+                    input &= ~MapModType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER;
+            }
+
+            if (HasFlag(input, MapModType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR))
+            {
+                if (HasFlag(input, MapModType.SURFACE_GATEA_STAIRS_LOCK))
+                    input &= ~MapModType.SURFACE_GATEA_STAIRS_LOCK;
+            }
+
+            if (HasFlag(input, MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR))
+            {
+                if (HasFlag(input, MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED))
+                    input &= ~MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED;
+            }
+
+            return input;
+        }
+
+        private AssetType[] ParseMapMods(MapModType mod)
+        {
+            ulong modUl = (ulong)mod;
+            List<AssetType> assets = new List<AssetType>();
+            for (int i = 0; i < 64; i++)
+            {
+                if (((modUl >> (63 - i)) & 1) != 0)
+                {
+                    switch ((MapModType)(1ul << i))
+                    {
+                        case MapModType.SURFACE_GATEA_MIDDLE_TOWER:
+                            assets.Add(AssetType.SURFACE_GATEA_MIDDLE_TOWER);
+                            break;
+                        case MapModType.SURFACE_GATEA_STAIRS_LOCK:
+                            assets.Add(AssetType.SURFACE_GATEA_STAIRS_LOCK);
+                            break;
+                        case MapModType.SURFACE_GATEA_TOWER_ARMORY:
+                            assets.Add(AssetType.SURFACE_GATEA_TOWER_ARMORY);
+                            break;
+                        case MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR:
+                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR);
+                            break;
+                        case MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED:
+                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED);
+                            break;
+                        case MapModType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR:
+                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR);
+                            break;
+                        case MapModType.SURFACE_GATEB_BRIDGE_FORWARD:
+                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_FORWARD);
+                            break;
+                        case MapModType.SURFACE_GATEB_BRIDGE_LEFT:
+                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_LEFT);
+                            break;
+                        case MapModType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER:
+                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER);
+                            break;
+                        default:
+                            throw new ArgumentException($"Unknown {nameof(MapModType)} ({(MapModType)(1ul << i)})");
+                    }
+                }
+            }
+
+            return assets.ToArray();
+        }
+
+        private void LoadAsset(AssetType assetType)
+        {
+            GameObject parent = new GameObject();
+            switch (assetType)
+            {
+                case AssetType.SURFACE_GATEB_BRIDGE_FORWARD:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEB_BRIDGE_LEFT:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEB_BRIDGE_CONNECTOR:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_STAIRS_LOCK:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_TOWER_ELEVATOR_BOTTOM:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_TOWER_ELEVATOR_TOP:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_TOWER_SCP1499_CHAMBER:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_TOWER_ARMORY:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_CICAR:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                case AssetType.SURFACE_GATEA_MIDDLE_TOWER:
+                    parent.transform.position = new Vector3(0, 1000, 0);
+                    if (!TrySpawnAsset(assetType.ToString(), parent.transform, out _))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    return;
+                default:
+                    throw new ArgumentException($"Unknown {nameof(AssetType)} ({assetType})");
+            }
+        }
+
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {
             if (!ev.IsAllowed)
@@ -159,7 +370,10 @@ namespace Mistaken.CustomStructures
         {
             ReloadAssets();
 
-            var bridge1 = new GameObject();
+            foreach (var item in this.ParseMapMods(this.GenerateMapMods()))
+                this.LoadAsset(item);
+
+            /*var bridge1 = new GameObject();
             bridge1.transform.position = new Vector3(0, 1000, 0);
             if (!TrySpawnAsset("surface_gateb_bridge_forward", bridge1.transform, out _))
                 this.Log.Warn($"Failed to spawn asset (surface_gateb_bridge_forward), is it present in AssetBoundle folder or in any boundle?");
@@ -229,7 +443,7 @@ namespace Mistaken.CustomStructures
             surfaceCICar.transform.position = new Vector3(0, 1000, 0);
             if (!TrySpawnAsset("surface_cicar", surfaceCICar.transform, out _))
             this.Log.Warn($"Failed to spawn asset (surface_cicar), is it present in AssetBoundle folder or in any boundle?");
-            Task.Delay(5).Wait();
+            Task.Delay(5).Wait();*/
         }
     }
 }
