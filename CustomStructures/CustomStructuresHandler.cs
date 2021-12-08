@@ -41,7 +41,7 @@ namespace Mistaken.CustomStructures // V3
         public override void OnEnable()
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
-            Exiled.Events.Handlers.Player.InteractingDoor += Player_InteractingDoor;
+            Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
 
             // var watcher = new FileSystemWatcher(Path.Combine(Paths.Plugins, "AssetBoundle"));
             // watcher.Changed += Watcher_Changed;

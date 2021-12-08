@@ -60,10 +60,10 @@ namespace Mistaken.CustomStructures
                 if (!transform.gameObject.activeSelf)
                     continue;
                 if (
-                    (transform.name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase)) || 
-                    (transform.name.StartsWith("HCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) || 
-                    (transform.name.StartsWith("EZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) || 
-                    (transform.name.StartsWith("LCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) || 
+                    (transform.name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase)) ||
+                    (transform.name.StartsWith("HCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) ||
+                    (transform.name.StartsWith("EZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) ||
+                    (transform.name.StartsWith("LCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) ||
                     (transform.name.StartsWith("TARGET_DBOY", StringComparison.InvariantCultureIgnoreCase))
                     )
                 {
