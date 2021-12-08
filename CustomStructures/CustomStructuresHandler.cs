@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="CustomStructuresHandler.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
@@ -41,12 +41,12 @@ namespace Mistaken.CustomStructures
         }
 
         /// <summary>
-        /// Spawns asset
+        /// Spawns asset.
         /// </summary>
-        /// <param name="name">Asset name</param>
-        /// <param name="parent">Parent if there is</param>
-        /// <returns>Spawn asset</returns>
-        /// <exception cref="ArgumentException">If asset with <paramref name="name"/> was not found</exception>
+        /// <param name="name">Asset name.</param>
+        /// <param name="parent">Parent if there is.</param>
+        /// <returns>Spawn asset.</returns>
+        /// <exception cref="ArgumentException">If asset with <paramref name="name"/> was not found.</exception>
         public static GameObject SpawnAsset(string name, Transform parent = null)
         {
             if (!Assets.TryGetValue(name.ToLower(), out var asset))

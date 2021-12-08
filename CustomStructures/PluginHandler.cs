@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="PluginHandler.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
@@ -34,8 +34,8 @@ namespace Mistaken.CustomStructures
         {
             Instance = this;
 
-            harmony = new HarmonyLib.Harmony("mistaken.customstructures");
-            harmony.PatchAll();
+            this.harmony = new HarmonyLib.Harmony("mistaken.customstructures");
+            this.harmony.PatchAll();
 
             new CustomStructuresHandler(this);
 

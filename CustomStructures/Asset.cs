@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="Asset.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
@@ -27,27 +27,27 @@ namespace Mistaken.CustomStructures
     public class Asset
     {
         /// <summary>
-        /// Spawned objects bound to top asset.
+        /// Gets spawned objects bound to top asset.
         /// </summary>
         public Dictionary<GameObject, List<GameObject>> SpawnedChildren { get; } = new Dictionary<GameObject, List<GameObject>>();
 
         /// <summary>
-        /// Asset name.
+        /// Gets or sets asset name.
         /// </summary>
         public string AssetName { get; set; }
 
         /// <summary>
-        /// Asset prefab
+        /// Gets or sets asset prefab.
         /// </summary>
         public GameObject Prefab { get; set; }
 
         /// <summary>
-        /// Spawns asset
+        /// Spawns asset.
         /// </summary>
-        /// <param name="position">Position</param>
-        /// <param name="eulerAngles">Rotation as eulerAngles</param>
-        /// <param name="scale">Scale</param>
-        /// <returns>Spawned asset</returns>
+        /// <param name="position">Position.</param>
+        /// <param name="eulerAngles">Rotation as eulerAngles.</param>
+        /// <param name="scale">Scale.</param>
+        /// <returns>Spawned asset.</returns>
         public GameObject Spawn(Vector3 position, Vector3 eulerAngles, Vector3 scale)
         {
             var tor = new GameObject();
@@ -59,10 +59,10 @@ namespace Mistaken.CustomStructures
         }
 
         /// <summary>
-        /// Spawns asset
+        /// Spawns asset.
         /// </summary>
-        /// <param name="parent">Parent</param>
-        /// <returns>Spawned asset</returns>
+        /// <param name="parent">Parent.</param>
+        /// <returns>Spawned asset.</returns>
         public GameObject Spawn(Transform parent)
         {
             var prefabObject = UnityEngine.Object.Instantiate(this.Prefab, parent);
