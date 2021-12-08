@@ -41,9 +41,28 @@ namespace Mistaken.CustomStructures // V3
         public override void OnEnable()
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
+            Exiled.Events.Handlers.Player.InteractingDoor += Player_InteractingDoor;
 
             // var watcher = new FileSystemWatcher(Path.Combine(Paths.Plugins, "AssetBoundle"));
             // watcher.Changed += Watcher_Changed;
+        }
+
+        private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
+        {
+            if (!ev.IsAllowed)
+                return;
+            if (Asset.ConnectedAnimators.TryGetValue(ev.Door.Base, out var animator))
+            {
+                animator.SetBool("IsOpen", !ev.Door.IsOpen);
+            }
+
+            if (Asset.RemovePostUse.Contains(ev.Door.Base))
+            {
+                this.CallDelayed(.25f, () =>
+                {
+                    NetworkServer.Destroy(ev.Door.Base.gameObject);
+                });
+            }
         }
 
         private void Server_WaitingForPlayers()
@@ -149,19 +168,17 @@ namespace Mistaken.CustomStructures // V3
             Assets.Clear();
             foreach (var asset in GetAssets())
             {
-                Assets.Add(
-                    asset.name,
-                    new Asset
+                Assets[asset.name.ToLower()] = new Asset
                 {
                     Prefab = asset,
                     AssetName = asset.name,
-                });
+                };
             }
         }
 
         public static GameObject SpawnAsset(string name, Transform parent = null)
         {
-            if (!Assets.TryGetValue(name, out var asset))
+            if (!Assets.TryGetValue(name.ToLower(), out var asset))
             {
                 throw new ArgumentException($"Unknown Asset name \"{name}\"", nameof(name));
             }

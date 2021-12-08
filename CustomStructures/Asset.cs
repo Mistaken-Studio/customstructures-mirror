@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AdminToys;
 using Exiled.API.Enums;
 using Exiled.API.Features.Items;
@@ -38,10 +39,43 @@ namespace Mistaken.CustomStructures
             return tor;
         }
 
+        internal static readonly Dictionary<DoorVariant, Animator> ConnectedAnimators = new Dictionary<DoorVariant, Animator>();
+        internal static readonly HashSet<DoorVariant> RemovePostUse = new HashSet<DoorVariant>();
+        internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
+
         public GameObject Spawn(Transform parent)
         {
             var prefabObject = UnityEngine.Object.Instantiate(this.Prefab, parent);
             prefabObject.hideFlags = HideFlags.HideAndDontSave;
+            this.SpawnedChildren[prefabObject] = new List<GameObject>();
+
+            foreach (var item in prefabObject.GetComponentsInChildren<Animator>())
+            {
+                foreach (var item2 in item.GetComponentsInChildren<Transform>())
+                    HighUpdateRate.Add(item2);
+            }
+
+            foreach (var transform in prefabObject.GetComponentsInChildren<Transform>())
+            {
+                if (!transform.gameObject.activeSelf)
+                    continue;
+                if (
+                    (transform.name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase)) || 
+                    (transform.name.StartsWith("HCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) || 
+                    (transform.name.StartsWith("EZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) || 
+                    (transform.name.StartsWith("LCZ_DOOR", StringComparison.InvariantCultureIgnoreCase)) || 
+                    (transform.name.StartsWith("TARGET_DBOY", StringComparison.InvariantCultureIgnoreCase))
+                    )
+                {
+                    foreach (var item in transform.GetComponentsInChildren<Transform>())
+                    {
+                        if (item == transform)
+                            continue;
+                        item.gameObject.SetActive(false);
+                        Exiled.API.Features.Log.Debug($"Disabled {item.gameObject.name} because of {transform.name}", true);
+                    }
+                }
+            }
 
             foreach (var transform in prefabObject.GetComponentsInChildren<Transform>())
             {
@@ -66,6 +100,7 @@ namespace Mistaken.CustomStructures
                         string[] args = name.Split('_');
                         Exiled.API.Features.Log.Debug($"Spawning Item", true);
                         var itemType = (ItemType)Enum.Parse(typeof(ItemType), args[1].Split('(')[0].Trim(), true);
+                        transform.gameObject.SetActive(false);
                         switch (itemType)
                         {
                             case ItemType.Ammo12gauge:
@@ -105,39 +140,37 @@ namespace Mistaken.CustomStructures
                     }
                     else
                     {
-                        DoorVariant door;
+                        DoorVariant door = null;
                         string[] nameArgs = name.Split(' ');
                         Exiled.API.Features.Log.Debug($"Spawning GameObject ({nameArgs[0]})", true);
                         switch (nameArgs[0])
                         {
                             case "HCZ_DOOR":
+                                transform.gameObject.SetActive(false);
                                 Exiled.API.Features.Log.Debug($"Spawning HCZ Door", true);
-                                door = DoorUtils.SpawnDoor(DoorUtils.DoorType.HCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.localScale);
+                                door = DoorUtils.SpawnDoor(DoorUtils.DoorType.HCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
-                                if (nameArgs.Length > 1 && nameArgs[1] == "(LOCKED)")
-                                    door.ServerChangeLock(DoorLockReason.AdminCommand, true);
                                 this.SpawnedChildren[prefabObject].Add(door.gameObject);
                                 break;
 
                             case "EZ_DOOR":
+                                transform.gameObject.SetActive(false);
                                 Exiled.API.Features.Log.Debug($"Spawning EZ Door", true);
-                                door = DoorUtils.SpawnDoor(DoorUtils.DoorType.EZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.localScale);
+                                door = DoorUtils.SpawnDoor(DoorUtils.DoorType.EZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
-                                if (nameArgs.Length > 1 && nameArgs[1] == "(LOCKED)")
-                                    door.ServerChangeLock(DoorLockReason.AdminCommand, true);
                                 this.SpawnedChildren[prefabObject].Add(door.gameObject);
                                 break;
 
                             case "LCZ_DOOR":
+                                transform.gameObject.SetActive(false);
                                 Exiled.API.Features.Log.Debug($"Spawning LCZ Door", true);
-                                door = DoorUtils.SpawnDoor(DoorUtils.DoorType.LCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.localScale);
+                                door = DoorUtils.SpawnDoor(DoorUtils.DoorType.LCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
-                                if (nameArgs.Length > 1 && nameArgs[1] == "(LOCKED)")
-                                    door.ServerChangeLock(DoorLockReason.AdminCommand, true);
                                 this.SpawnedChildren[prefabObject].Add(door.gameObject);
                                 break;
 
                             case "TARGET_DBOY":
+                                transform.gameObject.SetActive(false);
                                 Exiled.API.Features.Log.Debug($"Spawning TARGET_DBOY", true);
                                 var dBoy = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.ClassD, Vector3.zero).Base;
                                 dBoy.transform.position = tor.transform.position;
@@ -148,6 +181,30 @@ namespace Mistaken.CustomStructures
 
                             default:
                                 break;
+                        }
+
+                        if (door != null)
+                        {
+                            if (nameArgs.Length > 1 && nameArgs[1] == "(LOCKED)")
+                                door.ServerChangeLock(DoorLockReason.AdminCommand, true);
+                            if (nameArgs.Any(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)))
+                            {
+                                var arg = nameArgs.First(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)).Split(':')[1].Split(')')[0];
+                                var id = uint.Parse(arg.Split('|')[0]);
+                                if (arg.ToUpper().Contains("|ONETIME"))
+                                    RemovePostUse.Add(door);
+                                ConnectedAnimators[door] = null;
+                                foreach (var animator in prefabObject.GetComponentsInChildren<Animator>())
+                                {
+                                    if (animator.name.ToUpper().Contains($"(JOIN:{id})"))
+                                    {
+                                        ConnectedAnimators[door] = animator;
+
+                                        Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", true);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -237,6 +294,8 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localRotation = Quaternion.identity;
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
+            if (HighUpdateRate.Contains(parent))
+                ptoy.NetworkMovementSmoothing = 60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }
