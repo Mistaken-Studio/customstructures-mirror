@@ -39,6 +39,8 @@ namespace Mistaken.CustomStructures
 
             new CustomStructuresHandler(this);
 
+            new AssetHandlers.SurfaceGateATowerElevatorHandler().Register();
+
             API.Diagnostics.Module.OnEnable(this);
 
             base.OnEnabled();

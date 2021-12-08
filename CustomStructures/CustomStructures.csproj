@@ -63,8 +63,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Asset.cs" />
+    <Compile Include="AssetHandlers\AssetHandler.cs" />
+    <Compile Include="DestructionInformerScript.cs" />
+    <Compile Include="AssetHandlers\LinkedAssetHandler.cs" />
+    <Compile Include="AssetHandlers\SingleAssetHandler.cs" />
+    <Compile Include="AssetHandlers\SurfaceGateATowerElevatorHandler.cs" />
+    <Compile Include="AssetType.cs" />
     <Compile Include="LoadCommand.cs" />
     <Compile Include="CustomStructuresHandler.cs" />
+    <Compile Include="MapModType.cs" />
     <Compile Include="PluginHandler.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

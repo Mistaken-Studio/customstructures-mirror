@@ -10,6 +10,7 @@ using System.Linq;
 using AdminToys;
 using Exiled.API.Enums;
 using Exiled.API.Features.Items;
+using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Firearms.Ammo;
 using Mirror;
@@ -30,6 +31,8 @@ namespace Mistaken.CustomStructures
         /// Gets spawned objects bound to top asset.
         /// </summary>
         public Dictionary<GameObject, List<GameObject>> SpawnedChildren { get; } = new Dictionary<GameObject, List<GameObject>>();
+
+        public Dictionary<GameObject, DoorVariant> Doors { get; } = new Dictionary<GameObject, DoorVariant>();
 
         /// <summary>
         /// Gets or sets asset name.
@@ -169,6 +172,7 @@ namespace Mistaken.CustomStructures
                                 Exiled.API.Features.Log.Debug($"Spawning HCZ Door", true);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.HCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
+                                this.Doors[transform.gameObject] = door;
                                 this.SpawnedChildren[prefabObject].Add(door.gameObject);
                                 break;
 
@@ -177,6 +181,7 @@ namespace Mistaken.CustomStructures
                                 Exiled.API.Features.Log.Debug($"Spawning EZ Door", true);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.EZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
+                                this.Doors[transform.gameObject] = door;
                                 this.SpawnedChildren[prefabObject].Add(door.gameObject);
                                 break;
 
@@ -185,6 +190,7 @@ namespace Mistaken.CustomStructures
                                 Exiled.API.Features.Log.Debug($"Spawning LCZ Door", true);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.LCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
+                                this.Doors[transform.gameObject] = door;
                                 this.SpawnedChildren[prefabObject].Add(door.gameObject);
                                 break;
 
@@ -204,8 +210,10 @@ namespace Mistaken.CustomStructures
 
                         if (door != null)
                         {
-                            if (nameArgs.Length > 1 && nameArgs[1] == "(LOCKED)")
+                            if (nameArgs.Any(x => x.StartsWith("(LOCKED)", StringComparison.InvariantCultureIgnoreCase)))
                                 door.ServerChangeLock(DoorLockReason.AdminCommand, true);
+                            if (!nameArgs.Any(x => x.StartsWith("(BREAKABLE)", StringComparison.InvariantCultureIgnoreCase)))
+                                (door as BreakableDoor)._brokenPrefab = null;
                             if (nameArgs.Any(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)))
                             {
                                 var arg = nameArgs.First(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)).Split(':')[1].Split(')')[0];
