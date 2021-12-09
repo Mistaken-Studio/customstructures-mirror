@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+﻿// -----------------------------------------------------------------------
 // <copyright file="CustomStructuresHandler.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
@@ -254,7 +254,8 @@ namespace Mistaken.CustomStructures
                             break;
                         default:
                             break;
-                            //throw new ArgumentException($"Unknown {nameof(MapModType)} ({(MapModType)(1ul << i)})");
+
+                            // throw new ArgumentException($"Unknown {nameof(MapModType)} ({(MapModType)(1ul << i)})");
                     }
                 }
             }
