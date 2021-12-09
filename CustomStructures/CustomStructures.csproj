@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="Asset.cs" />
     <Compile Include="AssetHandlers\AssetHandler.cs" />
+    <Compile Include="LightSyncronizerScript.cs" />
     <Compile Include="DestructionInformerScript.cs" />
     <Compile Include="AssetHandlers\LinkedAssetHandler.cs" />
     <Compile Include="AssetHandlers\SingleAssetHandler.cs" />
