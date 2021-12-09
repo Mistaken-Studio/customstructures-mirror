@@ -218,7 +218,9 @@ namespace Mistaken.CustomStructures
                             {
                                 var arg = nameArgs.First(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)).Split(':')[1].Split(')')[0];
                                 var id = uint.Parse(arg.Split('|')[0]);
-                                if (arg.ToUpper().Contains("|ONETIME"))
+                                if (arg.ToUpper().Contains("|ONETIMELOCKED"))
+                                    LockPostUse.Add(door);
+                                else if (arg.ToUpper().Contains("|ONETIME"))
                                     RemovePostUse.Add(door);
                                 ConnectedAnimators[door] = null;
                                 foreach (var animator in prefabObject.GetComponentsInChildren<Animator>())
@@ -279,6 +281,7 @@ namespace Mistaken.CustomStructures
 
         internal static readonly Dictionary<DoorVariant, Animator> ConnectedAnimators = new Dictionary<DoorVariant, Animator>();
         internal static readonly HashSet<DoorVariant> RemovePostUse = new HashSet<DoorVariant>();
+        internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
         internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
 
         private static LightSourceToy primitiveBaseLight = null;

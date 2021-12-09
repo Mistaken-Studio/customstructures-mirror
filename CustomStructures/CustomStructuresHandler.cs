@@ -359,6 +359,12 @@ namespace Mistaken.CustomStructures
                     NetworkServer.Destroy(ev.Door.Base.gameObject);
                 });
             }
+
+            if (Asset.LockPostUse.Contains(ev.Door.Base))
+            {
+                ev.Door.Base.ServerChangeLock(Interactables.Interobjects.DoorUtils.DoorLockReason.SpecialDoorFeature, true);
+                ev.IsAllowed = false;
+            }
         }
 
         private void Server_WaitingForPlayers()
