@@ -1,5 +1,5 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="SyncLossyNotLocalScale.cs" company="Mistaken">
+// <copyright file="SyncLossyNotLocalScalePatch.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
@@ -16,7 +16,7 @@ using UnityEngine;
 namespace Mistaken.CustomStructures
 {
     [HarmonyPatch(typeof(AdminToys.AdminToyBase), nameof(AdminToys.AdminToyBase.UpdatePositionServer))]
-    internal static class SyncLossyNotLocalScale
+    internal static class SyncLossyNotLocalScalePatch
     {
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {

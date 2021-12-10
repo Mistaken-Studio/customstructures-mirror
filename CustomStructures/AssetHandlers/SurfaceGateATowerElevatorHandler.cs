@@ -6,18 +6,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Exiled.API.Features;
+using Exiled.API.Features.Items;
 using Interactables.Interobjects.DoorUtils;
+using InventorySystem.Items.Pickups;
 using MEC;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
 {
-    internal class SurfaceGateATowerElevatorHandler : LinkedAssetHandler
+    internal class SurfaceGateATowerElevatorHandler : SingleAssetHandler
     {
-        protected override AssetType AssetType => AssetType.SURFACE_GATEA_TOWER_ELEVATOR_BOTTOM;
+        protected override AssetType AssetType => AssetType.SURFACE_GATEA_TOWER_ELEVATOR;
 
-        protected override AssetType OtherAssetType => AssetType.SURFACE_GATEA_TOWER_ELEVATOR_TOP;
+        private Transform Bottom;
+        private Transform Top;
 
         private Transform BottomTrigger;
         private Transform TopTrigger;
@@ -29,38 +33,46 @@ namespace Mistaken.CustomStructures.AssetHandlers
         private bool IsOnTop = false;
         private bool IsMoving = false;
 
-        public override void Initialize(GameObject spawned, Asset asset, GameObject otherSpawned, Asset otherAsset)
+        public override void Initialize(GameObject spawned, Asset asset)
         {
-            base.Initialize(spawned, asset, otherSpawned, otherAsset);
+            base.Initialize(spawned, asset);
 
-            this.BottomTrigger = spawned.transform.Find("Trigger");
+            this.Bottom = spawned.transform.Find("Surface_GateA_Tower_Elevator_Bottom");
+            this.Top = spawned.transform.Find("Surface_GateA_Tower_Elevator_Top");
+
+            this.BottomTrigger = this.Bottom.transform.Find("Trigger");
             if (this.BottomTrigger == null)
                 throw new ArgumentNullException("BottomTrigger");
-            this.TopTrigger = otherSpawned.transform.Find("Trigger");
+            this.TopTrigger = this.Top.transform.Find("Trigger");
             if (this.TopTrigger == null)
                 throw new ArgumentNullException("TopTrigger");
             this.Offset = this.TopTrigger.transform.position - this.BottomTrigger.transform.position;
 
-            foreach (var item in spawned.GetComponentsInChildren<Transform>())
+            this.BottomDoor = asset.Doors[this.Bottom.Find("Entrance").Find("LCZ_DOOR").gameObject];
+            /*foreach (var item in this.Bottom.GetComponentsInChildren<Transform>())
             {
+                Log.Debug(item.name);
+
                 if (item.name == "LCZ_DOOR")
                 {
+                    Log.Debug("AAA");
                     this.BottomDoor = asset.Doors[item.gameObject];
                     break;
                 }
-            }
+            }*/
 
             if (this.BottomDoor == null)
                 throw new ArgumentNullException("this.BottomDoor");
 
-            foreach (var item in otherSpawned.GetComponentsInChildren<Transform>())
+            this.TopDoor = asset.Doors[this.Top.Find("Entrance").Find("LCZ_DOOR").gameObject];
+            /*foreach (var item in this.Top.GetComponentsInChildren<Transform>())
             {
                 if (item.name == "LCZ_DOOR")
                 {
                     this.TopDoor = asset.Doors[item.gameObject];
                     break;
                 }
-            }
+            }*/
 
             if (this.TopDoor == null)
                 throw new ArgumentNullException("this.TopDoor");
@@ -78,15 +90,16 @@ namespace Mistaken.CustomStructures.AssetHandlers
         {
             if (!ev.IsAllowed)
                 return;
-            if (ev.Door.Base == this.BottomDoor)
+            if (ev.Door.Base == this.BottomDoor || ev.Door.Base == this.TopDoor)
             {
                 ev.IsAllowed = false;
-                Timing.RunCoroutine(this.MoveUp());
-            }
-            else if (ev.Door.Base == this.TopDoor)
-            {
-                ev.IsAllowed = false;
-                Timing.RunCoroutine(this.MoveDown());
+                if (!this.IsMoving)
+                {
+                    if (this.IsOnTop)
+                        Timing.RunCoroutine(this.MoveDown());
+                    else
+                        Timing.RunCoroutine(this.MoveUp());
+                }
             }
         }
 
@@ -123,26 +136,35 @@ namespace Mistaken.CustomStructures.AssetHandlers
             yield return Timing.WaitForSeconds(3);
             if (this.BottomDoor.IsConsideredOpen())
             {
-                Log.Error("Elevator Door is open");
                 this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+                this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
                 this.IsMoving = false;
                 yield break;
             }
 
             var inRange = Physics.OverlapBox(this.BottomTrigger.transform.position, this.BottomTrigger.transform.lossyScale / 2, this.BottomTrigger.transform.rotation);
 
-            foreach (var item in inRange)
-            {
-                Log.Debug($"[UP] {item.name} was in range");
-                item.transform.position += this.Offset;
-            }
+            foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
+                this.Move(item.gameObject, this.Offset);
 
             yield return Timing.WaitForSeconds(2);
 
+            this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.TopDoor.NetworkTargetState = true;
             this.IsOnTop = true;
             this.IsMoving = false;
+        }
+
+        public void Move(GameObject item, Vector3 offset)
+        {
+            if (item.TryGetComponent<ItemPickupBase>(out var pickup))
+            {
+                pickup.transform.position += offset;
+                pickup.RefreshPositionAndRotation();
+            }
+            else if (item.TryGetComponent<ReferenceHub>(out var rh))
+                rh.playerMovementSync.ForcePosition(rh.playerMovementSync.RealModelPosition + offset);
         }
 
         public IEnumerator<float> MoveDown()
@@ -172,23 +194,21 @@ namespace Mistaken.CustomStructures.AssetHandlers
             yield return Timing.WaitForSeconds(3);
             if (this.TopDoor.IsConsideredOpen())
             {
-                Log.Error("Elevator Door is open");
                 this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+                this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
                 this.IsMoving = false;
                 yield break;
             }
 
             var inRange = Physics.OverlapBox(this.TopTrigger.transform.position, this.TopTrigger.transform.lossyScale / 2, this.TopTrigger.transform.rotation);
 
-            foreach (var item in inRange)
-            {
-                Log.Debug($"[UP] {item.name} was in range");
-                item.transform.position -= this.Offset;
-            }
+            foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
+                this.Move(item.gameObject, -this.Offset);
 
             yield return Timing.WaitForSeconds(2);
 
             this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.BottomDoor.NetworkTargetState = true;
             this.IsOnTop = false;
             this.IsMoving = false;

@@ -94,7 +94,7 @@ namespace Mistaken.CustomStructures
                         if (item == transform)
                             continue;
                         item.gameObject.SetActive(false);
-                        Exiled.API.Features.Log.Debug($"Disabled {item.gameObject.name} because of {transform.name}", true);
+                        //Exiled.API.Features.Log.Debug($"Disabled {item.gameObject.name} because of {transform.name}", true);
                     }
                 }
             }
@@ -105,12 +105,14 @@ namespace Mistaken.CustomStructures
                     continue;
                 if (transform.TryGetComponent<Light>(out Light light))
                 {
-                    this.SpawnedChildren[prefabObject].Add(CreateLight(
+                    var toy = CreateLight(
                         transform,
                         light.color,
                         light.intensity,
                         light.range,
-                        light.shadows != LightShadows.None).gameObject);
+                        light.shadows != LightShadows.None);
+                    transform.gameObject.AddComponent<LightSyncronizerScript>().Toy = toy;
+                    this.SpawnedChildren[prefabObject].Add(toy.gameObject);
                 }
 
                 if (!transform.TryGetComponent<MeshFilter>(out MeshFilter filter))
@@ -120,7 +122,7 @@ namespace Mistaken.CustomStructures
                     if (name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase))
                     {
                         string[] args = name.Split('_');
-                        Exiled.API.Features.Log.Debug($"Spawning Item", true);
+                        //Exiled.API.Features.Log.Debug($"Spawning Item", true);
                         var itemType = (ItemType)Enum.Parse(typeof(ItemType), args[1].Split('(')[0].Trim(), true);
                         transform.gameObject.SetActive(false);
                         switch (itemType)
@@ -133,7 +135,10 @@ namespace Mistaken.CustomStructures
                                 {
                                     var item = new Ammo(itemType);
                                     item.Scale = tor.transform.localScale;
-                                    (item.Spawn(tor.transform.position, tor.transform.rotation).Base as AmmoPickup).NetworkSavedAmmo = ushort.Parse(args[2].Split(' ')[0]);
+                                    var spawnd = item.Spawn(tor.transform.position, tor.transform.rotation).Base as AmmoPickup;
+                                    spawnd.NetworkSavedAmmo = ushort.Parse(args[2].Split(' ')[0]);
+                                    spawnd.Rb.useGravity = false;
+                                    spawnd.Rb.isKinematic = true;
                                     break;
                                 }
 
@@ -147,7 +152,9 @@ namespace Mistaken.CustomStructures
                                 {
                                     var item = new Exiled.API.Features.Items.Firearm(itemType);
                                     item.Scale = tor.transform.localScale;
-                                    item.Spawn(tor.transform.position, tor.transform.rotation);
+                                    var spawnd = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
+                                    spawnd.Rb.useGravity = false;
+                                    spawnd.Rb.isKinematic = true;
                                     break;
                                 }
 
@@ -155,7 +162,9 @@ namespace Mistaken.CustomStructures
                                 {
                                     var item = new Item(itemType);
                                     item.Scale = tor.transform.localScale;
-                                    item.Spawn(tor.transform.position, tor.transform.rotation);
+                                    var spawnd = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
+                                    spawnd.Rb.useGravity = false;
+                                    spawnd.Rb.isKinematic = true;
                                     break;
                                 }
                         }
@@ -164,7 +173,7 @@ namespace Mistaken.CustomStructures
                     {
                         DoorVariant door = null;
                         string[] nameArgs = name.Split(' ');
-                        Exiled.API.Features.Log.Debug($"Spawning GameObject ({nameArgs[0]})", true);
+                        //Exiled.API.Features.Log.Debug($"Spawning GameObject ({nameArgs[0]})", true);
                         switch (nameArgs[0])
                         {
                             case "HCZ_DOOR":
@@ -202,6 +211,17 @@ namespace Mistaken.CustomStructures
                                 dBoy.transform.eulerAngles = tor.transform.eulerAngles;
                                 dBoy.transform.localScale = tor.transform.localScale;
                                 this.SpawnedChildren[prefabObject].Add(dBoy.gameObject);
+                                break;
+
+                            case "WORK_STATION":
+                                transform.gameObject.SetActive(false);
+                                Exiled.API.Features.Log.Debug($"Spawning WORK_STATION", true);
+                                var workStation = GameObject.Instantiate(CustomNetworkManager.singleton.spawnPrefabs.First(x => x.name == "Work Station"));
+                                workStation.transform.position = tor.transform.position;
+                                workStation.transform.rotation = tor.transform.rotation;
+                                workStation.transform.localScale = tor.transform.localScale;
+                                NetworkServer.Spawn(workStation);
+                                this.SpawnedChildren[prefabObject].Add(workStation);
                                 break;
 
                             default:
@@ -332,7 +352,7 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
             if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = 60;
+                ptoy.NetworkMovementSmoothing = byte.MaxValue;//60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }
@@ -349,6 +369,8 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localRotation = Quaternion.identity;
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
+            if (HighUpdateRate.Contains(parent))
+                ptoy.NetworkMovementSmoothing = byte.MaxValue;//60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }

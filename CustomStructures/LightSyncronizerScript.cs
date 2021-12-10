@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using AdminToys;
+using Mirror;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures
@@ -25,7 +26,14 @@ namespace Mistaken.CustomStructures
                 return;
 
             if (this.Toy.enabled != this.Light.enabled)
+            {
                 this.Toy.enabled = this.Light.enabled;
+                if (this.Light.enabled)
+                    NetworkServer.Spawn(this.Toy.gameObject);
+                else
+                    NetworkServer.UnSpawn(this.Toy.gameObject);
+            }
+
             if (this.Toy.NetworkLightColor != this.Light.color)
                 this.Toy.NetworkLightColor = this.Light.color;
             if (this.Toy.NetworkLightIntensity != this.Light.intensity)

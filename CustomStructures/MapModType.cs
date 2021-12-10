@@ -18,7 +18,8 @@ namespace Mistaken.CustomStructures
         SURFACE_GATEA_TUNNEL_CI_DOOR = 1ul << 5,
         SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED = 1ul << 6,
         SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR = 1ul << 7,
-        SURFACE_GATEA_TOWER_ARMORY = 1ul << 8,
-        SURFACE_GATEA_MIDDLE_TOWER = 1ul << 9,
+        SURFACE_GATEA_MIDDLE_TOWER = 1ul << 8,
+
+        // SURFACE_GATEA_TOWER_ARMORY = 1ul << 9,
     }
 }
