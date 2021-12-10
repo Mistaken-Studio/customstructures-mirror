@@ -25,5 +25,7 @@ namespace Mistaken.CustomStructures
         SURFACE_GATEA_MIDDLE_TOWER,
         SURFACE_HELIPAD,
         SURFACE_HELICOPTER,
+
+        EZ_CURVE_ROOM,
     }
 }

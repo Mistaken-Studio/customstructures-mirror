@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Interfaces;
 using Mirror;
@@ -180,6 +182,8 @@ namespace Mistaken.CustomStructures
 
              // AssetType.SURFACE_HELICOPTER,
              AssetType.SURFACE_GATEA_TOWER_ARMORY_BIG,
+
+             AssetType.EZ_CURVE_ROOM,
         };
 
         private ulong GenerateRandomULong(System.Random rng)
@@ -280,7 +284,7 @@ namespace Mistaken.CustomStructures
             (GameObject Obj, Asset asset) spawned;
             switch (assetType)
             {
-                case AssetType.SURFACE_GATEB_BRIDGE_FORWARD:
+                /*case AssetType.SURFACE_GATEB_BRIDGE_FORWARD:
                     parent.transform.position = new Vector3(0, 1000, 0);
                     if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
                         this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
@@ -359,9 +363,35 @@ namespace Mistaken.CustomStructures
                     parent.transform.position = new Vector3(0, 1000, 0);
                     if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
                         this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
+                    return spawned;*/
                 default:
-                    throw new ArgumentException($"Unknown {nameof(AssetType)} ({assetType})");
+                    string[] args = assetType.ToString().ToUpper().Split('_');
+                    string name = args[0];
+                    switch (name)
+                    {
+                        case "SURFACE":
+                            parent.transform.position = new Vector3(0, 1000, 0);
+                            if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
+                                this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                            return spawned;
+                        default:
+                            if (Enum.TryParse<RoomType>(name + args[1], true, out var roomType))
+                            {
+                                spawned = default;
+                                foreach (var room in Map.Rooms.Where(x => x.Type == roomType))
+                                {
+                                    parent = new GameObject();
+                                    parent.transform.position = room.Position;
+                                    parent.transform.rotation = room.transform.rotation;
+                                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
+                                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                                }
+
+                                return spawned;
+                            }
+
+                            throw new ArgumentException($"Unknown {nameof(AssetType)} ({assetType})");
+                    }
             }
         }
 
