@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="PluginHandler.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
@@ -7,12 +7,12 @@
 using System;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Mistaken.API.Diagnostics;
+using HarmonyLib;
 
 namespace Mistaken.CustomStructures
 {
     /// <inheritdoc/>
-    public class PluginHandler : Plugin<Config>
+    internal class PluginHandler : Plugin<Config>
     {
         /// <inheritdoc/>
         public override string Author => "Mistaken Devs";
@@ -34,7 +34,12 @@ namespace Mistaken.CustomStructures
         {
             Instance = this;
 
+            this.harmony = new HarmonyLib.Harmony("mistaken.customstructures");
+            this.harmony.PatchAll();
+
             new CustomStructuresHandler(this);
+
+            new AssetHandlers.SurfaceGateATowerElevatorHandler().Register();
 
             API.Diagnostics.Module.OnEnable(this);
 
@@ -50,5 +55,7 @@ namespace Mistaken.CustomStructures
         }
 
         internal static PluginHandler Instance { get; private set; }
+
+        private Harmony harmony;
     }
 }

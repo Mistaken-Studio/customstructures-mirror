@@ -31,7 +31,7 @@ namespace Mistaken.CustomStructures
 
             this.toy = new GameObject();
             this.toy.transform.position = sender.GetPlayer().Position;
-            CustomStructuresHandler.LoadBoundle(Path.Combine(Paths.Plugins, "AssetBoundle", args[0]), this.toy.transform);
+            CustomStructuresHandler.SpawnAsset(string.Join(" ", args), this.toy.transform);
             s = true;
             return new string[] { "Spawned" };
         }
