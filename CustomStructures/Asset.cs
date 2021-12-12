@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+﻿// -----------------------------------------------------------------------
 // <copyright file="Asset.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
@@ -94,7 +94,8 @@ namespace Mistaken.CustomStructures
                         if (item == transform)
                             continue;
                         item.gameObject.SetActive(false);
-                        //Exiled.API.Features.Log.Debug($"Disabled {item.gameObject.name} because of {transform.name}", true);
+
+                        // Exiled.API.Features.Log.Debug($"Disabled {item.gameObject.name} because of {transform.name}", true);
                     }
                 }
             }
@@ -122,7 +123,8 @@ namespace Mistaken.CustomStructures
                     if (name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase))
                     {
                         string[] args = name.Split('_');
-                        //Exiled.API.Features.Log.Debug($"Spawning Item", true);
+
+                        // Exiled.API.Features.Log.Debug($"Spawning Item", true);
                         var itemType = (ItemType)Enum.Parse(typeof(ItemType), args[1].Split('(')[0].Trim(), true);
                         transform.gameObject.SetActive(false);
                         switch (itemType)
@@ -173,7 +175,8 @@ namespace Mistaken.CustomStructures
                     {
                         DoorVariant door = null;
                         string[] nameArgs = name.Split(' ');
-                        //Exiled.API.Features.Log.Debug($"Spawning GameObject ({nameArgs[0]})", true);
+
+                        // Exiled.API.Features.Log.Debug($"Spawning GameObject ({nameArgs[0]})", true);
                         switch (nameArgs[0])
                         {
                             case "HCZ_DOOR":
@@ -352,7 +355,7 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
             if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = byte.MaxValue;//60;
+                ptoy.NetworkMovementSmoothing = byte.MaxValue;// 60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }
@@ -370,7 +373,7 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
             if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = byte.MaxValue;//60;
+                ptoy.NetworkMovementSmoothing = byte.MaxValue;// 60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }

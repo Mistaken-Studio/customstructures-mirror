@@ -123,18 +123,19 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
-            Exiled.Events.Handlers.Player.ChangingItem += Player_ChangingItem;
+            Exiled.Events.Handlers.Player.ChangingItem += this.Player_ChangingItem;
         }
+
         private HelicopterScript helicopter;
         private void Player_ChangingItem(Exiled.Events.EventArgs.ChangingItemEventArgs ev)
         {
             if(ev.NewItem?.Type == ItemType.KeycardJanitor)
             {
-                helicopter.Land();
+                this.helicopter.Land();
             }
             else if (ev.NewItem?.Type == ItemType.KeycardScientist)
             {
-                helicopter.TakeOff();
+                this.helicopter.TakeOff();
             }
         }
 
@@ -423,9 +424,9 @@ namespace Mistaken.CustomStructures
                 spawnedAssets[item] = this.LoadAsset(item);
                 if(item == AssetType.SURFACE_HELICOPTER)
                 {
-                    helicopter = spawnedAssets[item].obj.GetComponent<HelicopterScript>();
-                    if (helicopter == null)
-                        helicopter = spawnedAssets[item].obj.GetComponentInChildren<HelicopterScript>();
+                    this.helicopter = spawnedAssets[item].obj.GetComponent<HelicopterScript>();
+                    if (this.helicopter == null)
+                        this.helicopter = spawnedAssets[item].obj.GetComponentInChildren<HelicopterScript>();
                 }
             }
 
