@@ -127,9 +127,10 @@ namespace Mistaken.CustomStructures
         }
 
         private HelicopterScript helicopter;
+
         private void Player_ChangingItem(Exiled.Events.EventArgs.ChangingItemEventArgs ev)
         {
-            if(ev.NewItem?.Type == ItemType.KeycardJanitor)
+            if (ev.NewItem?.Type == ItemType.KeycardJanitor)
             {
                 this.helicopter.Land();
             }
@@ -178,13 +179,15 @@ namespace Mistaken.CustomStructures
         {
              AssetType.SURFACE_GATEA_TOWER_SCP1499_CHAMBER,
              AssetType.SURFACE_GATEA_TOWER_ELEVATOR,
-             AssetType.SURFACE_CICAR,
+
+             // AssetType.SURFACE_CICAR,
              AssetType.SURFACE_HELIPAD,
 
              // AssetType.SURFACE_HELICOPTER,
              AssetType.SURFACE_GATEA_TOWER_ARMORY_BIG,
 
              AssetType.EZ_CURVE_ROOM,
+             AssetType.EZ_VENT_MEDICALROOM,
         };
 
         private ulong GenerateRandomULong(System.Random rng)

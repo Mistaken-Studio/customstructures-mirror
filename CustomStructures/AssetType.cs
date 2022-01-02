@@ -27,5 +27,6 @@ namespace Mistaken.CustomStructures
         SURFACE_HELICOPTER,
 
         EZ_CURVE_ROOM,
+        EZ_VENT_MEDICALROOM,
     }
 }
