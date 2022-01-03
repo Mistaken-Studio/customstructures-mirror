@@ -4,8 +4,8 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using Mistaken.UnityPrefabs;
 using System.Collections.Generic;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
