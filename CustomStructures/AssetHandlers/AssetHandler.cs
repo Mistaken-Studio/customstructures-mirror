@@ -5,7 +5,6 @@
 // -----------------------------------------------------------------------
 
 using Mistaken.UnityPrefabs;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers

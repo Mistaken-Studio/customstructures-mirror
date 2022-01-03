@@ -17,14 +17,6 @@ namespace Mistaken.CustomStructures.AssetHandlers
 {
     internal class WarheadTimerHandler : SingleAssetHandler
     {
-        protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.WARHEAD_TIMER;
-
-        private static Color LockedColor { get; } = Color.green;
-
-        private static Color PausedColor { get; } = Color.yellow;
-
-        private static Color InProgressColor { get; } = Color.red;
-
         public Color BackgroundColor
         {
             get => this.display.Background.material.color;
@@ -36,8 +28,6 @@ namespace Mistaken.CustomStructures.AssetHandlers
                     toy.NetworkMaterialColor = this.display.Background.material.color;
             }
         }
-
-        private MutliSegmentDisplayScript display;
 
         public override void Initialize(GameObject spawned, Asset asset)
         {
@@ -70,6 +60,16 @@ namespace Mistaken.CustomStructures.AssetHandlers
             Exiled.Events.Handlers.Warhead.Detonated -= this.Warhead_Detonated;
             Exiled.Events.Handlers.Player.ActivatingWarheadPanel -= this.Player_ActivatingWarheadPanel;
         }
+
+        protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.WARHEAD_TIMER;
+
+        private static Color LockedColor { get; } = Color.green;
+
+        private static Color PausedColor { get; } = Color.yellow;
+
+        private static Color InProgressColor { get; } = Color.red;
+
+        private MutliSegmentDisplayScript display;
 
         private IEnumerator<float> UpdateTimer()
         {

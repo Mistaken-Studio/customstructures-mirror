@@ -34,6 +34,9 @@ namespace Mistaken.CustomStructures
         /// </summary>
         public Dictionary<GameObject, List<GameObject>> SpawnedChildren { get; } = new Dictionary<GameObject, List<GameObject>>();
 
+        /// <summary>
+        /// Gets objects bound to doors.
+        /// </summary>
         public Dictionary<GameObject, DoorVariant> Doors { get; } = new Dictionary<GameObject, DoorVariant>();
 
         /// <summary>
@@ -41,6 +44,9 @@ namespace Mistaken.CustomStructures
         /// </summary>
         public AssetMeta Meta { get; set; }
 
+        /// <summary>
+        /// Gets or sets number of spawned this round.
+        /// </summary>
         public int Spawned { get; set; } = 0;
 
         /// <summary>
