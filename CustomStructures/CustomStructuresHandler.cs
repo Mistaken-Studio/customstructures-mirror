@@ -130,8 +130,14 @@ namespace Mistaken.CustomStructures
             foreach (var asset in Assets)
             {
                 foreach (var item in asset.Value.SpawnedChildren)
+                {
+                    foreach (var item2 in item.Value)
+                        GameObject.Destroy(item2);
                     GameObject.Destroy(item.Key);
+                }
             }
+
+            Assets.Clear();
         }
 
         /// <inheritdoc/>
