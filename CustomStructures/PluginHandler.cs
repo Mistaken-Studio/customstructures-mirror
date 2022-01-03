@@ -8,6 +8,7 @@ using System;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using HarmonyLib;
+using Mistaken.UnityPrefabs;
 
 namespace Mistaken.CustomStructures
 {
@@ -39,7 +40,8 @@ namespace Mistaken.CustomStructures
 
             new CustomStructuresHandler(this);
 
-            new AssetHandlers.SurfaceGateATowerElevatorHandler().Register();
+            CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR] = typeof(AssetHandlers.SurfaceGateATowerElevatorHandler);
+            CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.WARHEAD_TIMER] = typeof(AssetHandlers.WarheadTimerHandler);
 
             API.Diagnostics.Module.OnEnable(this);
 

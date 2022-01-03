@@ -13,6 +13,7 @@ using Exiled.API.Features;
 using Exiled.API.Interfaces;
 using Mirror;
 using Mistaken.API.Diagnostics;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures
@@ -23,9 +24,7 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Assets bound to their name.
         /// </summary>
-        public static readonly Dictionary<string, Asset> Assets = new Dictionary<string, Asset>();
-
-        internal static readonly Dictionary<AssetType, AssetHandlers.AssetHandler> AssetsHandlers = new Dictionary<AssetType, AssetHandlers.AssetHandler>();
+        public static readonly Dictionary<AssetMeta.AssetType, Asset> Assets = new Dictionary<AssetMeta.AssetType, Asset>();
 
         /// <summary>
         /// Reloads <see cref="Assets"/>.
@@ -35,10 +34,19 @@ namespace Mistaken.CustomStructures
             Assets.Clear();
             foreach (var asset in GetAssets())
             {
-                Assets[asset.name.ToLower()] = new Asset
+                var meta = asset.GetComponent<AssetMeta>();
+                if (meta == null)
+                {
+                    Exiled.API.Features.Log.Warn($"Meta Script for {asset.name} not found");
+                    continue;
+                }
+
+                Exiled.API.Features.Log.Debug($"Meta Script for {asset.name} found");
+
+                Assets[meta.Type] = new Asset
                 {
                     Prefab = asset,
-                    AssetName = asset.name,
+                    Meta = meta,
                 };
             }
         }
@@ -46,14 +54,14 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Spawns asset.
         /// </summary>
-        /// <param name="name">Asset name.</param>
+        /// <param name="type">Asset Type.</param>
         /// <param name="parent">Parent if there is.</param>
         /// <returns>Spawn asset.</returns>
-        /// <exception cref="ArgumentException">If asset with <paramref name="name"/> was not found.</exception>
-        public static GameObject SpawnAsset(string name, Transform parent = null)
+        /// <exception cref="ArgumentException">If asset with <paramref name="type"/> was not found.</exception>
+        public static GameObject SpawnAsset(AssetMeta.AssetType type, Transform parent = null)
         {
-            if (!TrySpawnAsset(name, parent, out var tor))
-                throw new ArgumentException($"Unknown Asset name \"{name}\"", nameof(name));
+            if (!TrySpawnAsset(type, parent, out var tor))
+                throw new ArgumentException($"Unknown Asset Type \"{type}\"", nameof(type));
 
             return tor;
         }
@@ -61,13 +69,13 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Tries to spawn asset.
         /// </summary>
-        /// <param name="name">Asset name.</param>
+        /// <param name="type">Asset Type.</param>
         /// <param name="parent">Parent if there is.</param>
         /// <param name="spawnedAsset">Spawn asset.</param>
         /// <returns>If asset was spawned.</returns>
-        public static bool TrySpawnAsset(string name, Transform parent, out GameObject spawnedAsset)
+        public static bool TrySpawnAsset(AssetMeta.AssetType type, Transform parent, out GameObject spawnedAsset)
         {
-            if (!Assets.TryGetValue(name.ToLower(), out var asset))
+            if (!Assets.TryGetValue(type, out var asset))
             {
                 spawnedAsset = null;
                 return false;
@@ -75,7 +83,7 @@ namespace Mistaken.CustomStructures
 
             spawnedAsset = asset.Spawn(parent);
 
-            Exiled.API.Features.Log.Debug($"Loaded {name}", true);
+            Exiled.API.Features.Log.Debug($"Loaded {type}", true);
 
             return true;
         }
@@ -83,13 +91,13 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Tries to spawn asset.
         /// </summary>
-        /// <param name="name">Asset name.</param>
+        /// <param name="type">Asset Type.</param>
         /// <param name="parent">Parent if there is.</param>
-        /// <param name="spawnedAsset">Spawn asset.</param>
+        /// <param name="result">Spawned asset.</param>
         /// <returns>If asset was spawned.</returns>
-        public static bool TrySpawnAssetAndGet(string name, Transform parent, out (GameObject obj, Asset asset) result)
+        public static bool TryGetAndSpawnAsset(AssetMeta.AssetType type, Transform parent, out (GameObject obj, Asset asset) result)
         {
-            if (!Assets.TryGetValue(name.ToLower(), out var asset))
+            if (!Assets.TryGetValue(type, out var asset))
             {
                 result = default;
                 return false;
@@ -97,7 +105,7 @@ namespace Mistaken.CustomStructures
 
             result = (asset.Spawn(parent), asset);
 
-            Exiled.API.Features.Log.Debug($"Loaded {name}", true);
+            Exiled.API.Features.Log.Debug($"Loaded {type}", true);
 
             return true;
         }
@@ -116,6 +124,18 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
+
+            foreach (var asset in Assets)
+            {
+                foreach (var item in asset.Value.SpawnedChildren)
+                {
+                    foreach (var item2 in item.Value)
+                        GameObject.Destroy(item2);
+                    GameObject.Destroy(item.Key);
+                }
+            }
+
+            Assets.Clear();
         }
 
         /// <inheritdoc/>
@@ -123,22 +143,11 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
-            Exiled.Events.Handlers.Player.ChangingItem += this.Player_ChangingItem;
+
+            ReloadAssets();
         }
 
-        private HelicopterScript helicopter;
-
-        private void Player_ChangingItem(Exiled.Events.EventArgs.ChangingItemEventArgs ev)
-        {
-            if (ev.NewItem?.Type == ItemType.KeycardJanitor)
-            {
-                this.helicopter.Land();
-            }
-            else if (ev.NewItem?.Type == ItemType.KeycardScientist)
-            {
-                this.helicopter.TakeOff();
-            }
-        }
+        internal static readonly Dictionary<AssetMeta.AssetType, Type> AssetsHandlers = new Dictionary<AssetMeta.AssetType, Type>();
 
         private static IEnumerable<AssetBundle> LoadBoundles(string files)
         {
@@ -169,234 +178,7 @@ namespace Mistaken.CustomStructures
 
             foreach (var boundle in boundles)
                 boundle.Unload(false);
-
             return assets;
-        }
-
-        private static bool HasFlag(MapModType type, MapModType flag) => (type & flag) != 0;
-
-        private readonly AssetType[] alwaysLoaded = new AssetType[]
-        {
-             AssetType.SURFACE_GATEA_TOWER_SCP1499_CHAMBER,
-             AssetType.SURFACE_GATEA_TOWER_ELEVATOR,
-
-             // AssetType.SURFACE_CICAR,
-             AssetType.SURFACE_HELIPAD,
-
-             // AssetType.SURFACE_HELICOPTER,
-             AssetType.SURFACE_GATEA_TOWER_ARMORY_BIG,
-
-             AssetType.EZ_CURVE_ROOM,
-             AssetType.EZ_VENT_MEDICALROOM,
-        };
-
-        private ulong GenerateRandomULong(System.Random rng)
-        {
-            byte[] buf = new byte[8];
-            rng.NextBytes(buf);
-            ulong ulongRand = BitConverter.ToUInt64(buf, 0);
-
-            return ulongRand;
-        }
-
-        private MapModType GenerateMapMods()
-        {
-            ulong random = this.GenerateRandomULong(new System.Random());
-            random >>= 63 - 10;
-
-            MapModType flags = this.ValidateMapMods((MapModType)random);
-
-            return flags;
-        }
-
-        private MapModType ValidateMapMods(MapModType input)
-        {
-            if (HasFlag(input, MapModType.SURFACE_GATEB_BRIDGE_LEFT))
-            {
-                if (HasFlag(input, MapModType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER))
-                    input &= ~MapModType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER;
-            }
-
-            if (HasFlag(input, MapModType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR))
-            {
-                if (HasFlag(input, MapModType.SURFACE_GATEA_STAIRS_LOCK))
-                    input &= ~MapModType.SURFACE_GATEA_STAIRS_LOCK;
-            }
-
-            if (HasFlag(input, MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR))
-            {
-                if (HasFlag(input, MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED))
-                    input &= ~MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED;
-            }
-
-            return input;
-        }
-
-        private AssetType[] ParseMapMods(MapModType mod)
-        {
-            ulong modUl = (ulong)mod;
-            List<AssetType> assets = new List<AssetType>();
-            Exiled.API.Features.Log.Debug(mod, true);
-            for (int i = 0; i < 64; i++)
-            {
-                if (((modUl >> i) & 1) != 0)
-                {
-                    Exiled.API.Features.Log.Debug(i + "|" + (MapModType)(1ul << i), true);
-                    switch ((MapModType)(1ul << i))
-                    {
-                        case MapModType.SURFACE_GATEA_MIDDLE_TOWER:
-                            assets.Add(AssetType.SURFACE_GATEA_MIDDLE_TOWER);
-                            break;
-                        case MapModType.SURFACE_GATEA_STAIRS_LOCK:
-                            assets.Add(AssetType.SURFACE_GATEA_STAIRS_LOCK);
-                            break;
-                        /*case MapModType.SURFACE_GATEA_TOWER_ARMORY:
-                            assets.Add(AssetType.SURFACE_GATEA_TOWER_ARMORY);
-                            break;*/
-                        case MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR:
-                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR);
-                            break;
-                        case MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED:
-                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED);
-                            break;
-                        case MapModType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR:
-                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR);
-                            break;
-                        case MapModType.SURFACE_GATEB_BRIDGE_FORWARD:
-                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_FORWARD);
-                            break;
-                        case MapModType.SURFACE_GATEB_BRIDGE_LEFT:
-                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_LEFT);
-                            break;
-                        case MapModType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER:
-                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER);
-                            break;
-                        default:
-                            break;
-
-                            // throw new ArgumentException($"Unknown {nameof(MapModType)} ({(MapModType)(1ul << i)})");
-                    }
-                }
-            }
-
-            return assets.ToArray();
-        }
-
-        private (GameObject Obj, Asset asset) LoadAsset(AssetType assetType)
-        {
-            GameObject parent = new GameObject();
-            (GameObject Obj, Asset asset) spawned;
-            switch (assetType)
-            {
-                /*case AssetType.SURFACE_GATEB_BRIDGE_FORWARD:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEB_BRIDGE_LEFT:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEB_BRIDGE_CONNECTOR:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_STAIRS_LOCK:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_TOWER_ELEVATOR:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_TOWER_SCP1499_CHAMBER:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_TOWER_ARMORY:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_CICAR:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_MIDDLE_TOWER:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_HELIPAD:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_GATEA_TOWER_ARMORY_BIG:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;
-                case AssetType.SURFACE_HELICOPTER:
-                    parent.transform.position = new Vector3(0, 1000, 0);
-                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                    return spawned;*/
-                default:
-                    string[] args = assetType.ToString().ToUpper().Split('_');
-                    string name = args[0];
-                    switch (name)
-                    {
-                        case "SURFACE":
-                            parent.transform.position = new Vector3(0, 1000, 0);
-                            if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                                this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                            return spawned;
-                        default:
-                            if (Enum.TryParse<RoomType>(name + args[1], true, out var roomType))
-                            {
-                                spawned = default;
-                                foreach (var room in Map.Rooms.Where(x => x.Type == roomType))
-                                {
-                                    parent = new GameObject();
-                                    parent.transform.position = room.Position;
-                                    parent.transform.rotation = room.transform.rotation;
-                                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
-                                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                                }
-
-                                return spawned;
-                            }
-
-                            throw new ArgumentException($"Unknown {nameof(AssetType)} ({assetType})");
-                    }
-            }
         }
 
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
@@ -420,34 +202,61 @@ namespace Mistaken.CustomStructures
         private void Server_WaitingForPlayers()
         {
             ReloadAssets();
+            this.LoadAssets();
+        }
 
-            Dictionary<AssetType, (GameObject obj, Asset asset)> spawnedAssets = new Dictionary<AssetType, (GameObject obj, Asset asset)>();
-            foreach (var item in this.alwaysLoaded)
+        private void LoadAssets()
+        {
+            var rooms = Map.Rooms.ToArray();
+            rooms.ShuffleList();
+            foreach (var room in rooms)
             {
-                spawnedAssets[item] = this.LoadAsset(item);
-                if(item == AssetType.SURFACE_HELICOPTER)
+                HashSet<AssetMeta.AssetType> spawned = new HashSet<AssetMeta.AssetType>();
+                foreach (var asset in Assets.Values)
                 {
-                    this.helicopter = spawnedAssets[item].obj.GetComponent<HelicopterScript>();
-                    if (this.helicopter == null)
-                        this.helicopter = spawnedAssets[item].obj.GetComponentInChildren<HelicopterScript>();
-                }
-            }
+                    var meta = GameObject.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
 
-            foreach (var item in this.ParseMapMods(this.GenerateMapMods()))
-                spawnedAssets[item] = this.LoadAsset(item);
-
-            HashSet<AssetHandlers.AssetHandler> used = new HashSet<AssetHandlers.AssetHandler>();
-            foreach (var assetsHandler in AssetsHandlers)
-            {
-                if (used.Contains(assetsHandler.Value))
-                    continue;
-                foreach (var spawnedAsset in spawnedAssets)
-                {
-                    if (assetsHandler.Key == spawnedAsset.Key)
+                    foreach (var rule in asset.Meta.Rules)
                     {
-                        assetsHandler.Value.Initialize(spawnedAssets);
-                        used.Add(assetsHandler.Value);
-                        break;
+                        if ((RoomType)rule.Room != room.Type)
+                            continue;
+
+                        if (!rule.Spawn)
+                            continue;
+
+                        if (rule.MaxAmount <= asset.Spawned)
+                            continue;
+
+                        if (spawned.Any(x => rule.ColidingAssetTypes.Contains(x)))
+                            continue;
+
+                        if (rule.MinAmount <= asset.Spawned)
+                        {
+                            if (rule.Chance < UnityEngine.Random.Range(0, 100))
+                                continue;
+                        }
+
+                        GameObject parent = new GameObject();
+                        parent.transform.position = room.Position;
+                        parent.transform.rotation = room.transform.rotation;
+
+                        var instance = asset.Spawn(parent.transform);
+
+                        foreach (var assetsHandler in AssetsHandlers)
+                        {
+                            if (assetsHandler.Key == asset.Meta.Type)
+                            {
+                                var handler = (AssetHandlers.AssetHandler)Activator.CreateInstance(assetsHandler.Value);
+                                handler.Initialize(instance, asset);
+
+                                break;
+                            }
+                        }
+
+                        Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.Type}", true);
+
+                        spawned.Add(asset.Meta.Type);
+                        asset.Spawned++;
                     }
                 }
             }

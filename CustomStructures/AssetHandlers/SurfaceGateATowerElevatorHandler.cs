@@ -12,95 +12,45 @@ using Exiled.API.Features.Items;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Pickups;
 using MEC;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
 {
     internal class SurfaceGateATowerElevatorHandler : SingleAssetHandler
     {
-        protected override AssetType AssetType => AssetType.SURFACE_GATEA_TOWER_ELEVATOR;
-
-        private Transform Bottom;
-        private Transform Top;
-
-        private Transform BottomTrigger;
-        private Transform TopTrigger;
-        private Vector3 Offset;
-
-        private DoorVariant BottomDoor;
-        private DoorVariant TopDoor;
-
-        private bool IsOnTop = false;
-        private bool IsMoving = false;
-
         public override void Initialize(GameObject spawned, Asset asset)
         {
             base.Initialize(spawned, asset);
 
-            this.Bottom = spawned.transform.Find("Surface_GateA_Tower_Elevator_Bottom");
-            this.Top = spawned.transform.Find("Surface_GateA_Tower_Elevator_Top");
+            this.bottom = spawned.transform.Find("Surface_GateA_Tower_Elevator_Bottom");
+            this.top = spawned.transform.Find("Surface_GateA_Tower_Elevator_Top");
 
-            this.BottomTrigger = this.Bottom.transform.Find("Trigger");
-            if (this.BottomTrigger == null)
+            this.bottomTrigger = this.bottom.transform.Find("Trigger");
+            if (this.bottomTrigger == null)
                 throw new ArgumentNullException("BottomTrigger");
-            this.TopTrigger = this.Top.transform.Find("Trigger");
-            if (this.TopTrigger == null)
+            this.topTrigger = this.top.transform.Find("Trigger");
+            if (this.topTrigger == null)
                 throw new ArgumentNullException("TopTrigger");
-            this.Offset = this.TopTrigger.transform.position - this.BottomTrigger.transform.position;
+            this.offset = this.topTrigger.transform.position - this.bottomTrigger.transform.position;
 
-            this.BottomDoor = asset.Doors[this.Bottom.Find("Entrance").Find("LCZ_DOOR").gameObject];
-            /*foreach (var item in this.Bottom.GetComponentsInChildren<Transform>())
-            {
-                Log.Debug(item.name);
+            this.bottomDoor = asset.Doors[this.bottom.Find("Entrance").Find("LCZ_DOOR").gameObject];
 
-                if (item.name == "LCZ_DOOR")
-                {
-                    Log.Debug("AAA");
-                    this.BottomDoor = asset.Doors[item.gameObject];
-                    break;
-                }
-            }*/
-
-            if (this.BottomDoor == null)
+            if (this.bottomDoor == null)
                 throw new ArgumentNullException("this.BottomDoor");
 
-            this.TopDoor = asset.Doors[this.Top.Find("Entrance").Find("LCZ_DOOR").gameObject];
-            /*foreach (var item in this.Top.GetComponentsInChildren<Transform>())
-            {
-                if (item.name == "LCZ_DOOR")
-                {
-                    this.TopDoor = asset.Doors[item.gameObject];
-                    break;
-                }
-            }*/
+            this.topDoor = asset.Doors[this.top.Find("Entrance").Find("LCZ_DOOR").gameObject];
 
-            if (this.TopDoor == null)
+            if (this.topDoor == null)
                 throw new ArgumentNullException("this.TopDoor");
 
-            this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-            this.BottomDoor.NetworkTargetState = true;
+            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.bottomDoor.NetworkTargetState = true;
 
-            this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-            this.TopDoor.NetworkTargetState = false;
+            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
+            this.topDoor.NetworkTargetState = false;
 
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
-        }
-
-        private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
-        {
-            if (!ev.IsAllowed)
-                return;
-            if (ev.Door.Base == this.BottomDoor || ev.Door.Base == this.TopDoor)
-            {
-                ev.IsAllowed = false;
-                if (!this.IsMoving)
-                {
-                    if (this.IsOnTop)
-                        Timing.RunCoroutine(this.MoveDown());
-                    else
-                        Timing.RunCoroutine(this.MoveUp());
-                }
-            }
         }
 
         public override void OnDeinitialize(GameObject gameObject)
@@ -109,54 +59,69 @@ namespace Mistaken.CustomStructures.AssetHandlers
             Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
         }
 
-        public IEnumerator<float> MoveUp()
+        protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR;
+
+        private Transform bottom;
+        private Transform top;
+
+        private Transform bottomTrigger;
+        private Transform topTrigger;
+        private Vector3 offset;
+
+        private DoorVariant bottomDoor;
+        private DoorVariant topDoor;
+
+        private bool isOnTop = false;
+        private bool isMoving = false;
+
+        private IEnumerator<float> MoveUp()
         {
-            if (this.IsOnTop)
+            if (this.isOnTop)
             {
                 Log.Error("Elevator is already on top");
                 yield break;
             }
 
-            if (this.IsMoving)
+            if (this.isMoving)
             {
                 Log.Error("Elevator is currently in moving state");
                 yield break;
             }
 
-            if (this.TopDoor.IsConsideredOpen())
+            if (this.topDoor.IsConsideredOpen())
             {
                 Log.Error("Elevator Door is open on wrong side");
                 yield break;
             }
 
-            this.IsMoving = true;
-            this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-            this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-            this.BottomDoor.NetworkTargetState = false;
+            this.isMoving = true;
+            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
+            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
+            this.bottomDoor.NetworkTargetState = false;
             yield return Timing.WaitForSeconds(3);
-            if (this.BottomDoor.IsConsideredOpen())
+            if (this.bottomDoor.IsConsideredOpen())
             {
-                this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-                this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-                this.IsMoving = false;
+                this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+                this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+                this.isMoving = false;
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.BottomTrigger.transform.position, this.BottomTrigger.transform.lossyScale / 2, this.BottomTrigger.transform.rotation);
+            var inRange = Physics.OverlapBox(this.bottomTrigger.transform.position, this.bottomTrigger.transform.lossyScale / 2, this.bottomTrigger.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
-                this.Move(item.gameObject, this.Offset);
+                this.Move(item.gameObject, this.offset);
 
             yield return Timing.WaitForSeconds(2);
 
-            this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-            this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-            this.TopDoor.NetworkTargetState = true;
-            this.IsOnTop = true;
-            this.IsMoving = false;
+            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.topDoor.NetworkTargetState = true;
+            this.isOnTop = true;
+            this.isMoving = false;
         }
 
-        public void Move(GameObject item, Vector3 offset)
+        private void Move(GameObject item, Vector3 offset)
         {
             if (item.TryGetComponent<ItemPickupBase>(out var pickup))
             {
@@ -167,51 +132,68 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 rh.playerMovementSync.ForcePosition(rh.playerMovementSync.RealModelPosition + offset);
         }
 
-        public IEnumerator<float> MoveDown()
+        private IEnumerator<float> MoveDown()
         {
-            if (!this.IsOnTop)
+            if (!this.isOnTop)
             {
                 Log.Error("Elevator is already on bottom");
                 yield break;
             }
 
-            if (this.IsMoving)
+            if (this.isMoving)
             {
                 Log.Error("Elevator is currently in moving state");
                 yield break;
             }
 
-            if (this.BottomDoor.IsConsideredOpen())
+            if (this.bottomDoor.IsConsideredOpen())
             {
                 Log.Error("Elevator Door is open on wrong side");
                 yield break;
             }
 
-            this.IsMoving = true;
-            this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-            this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-            this.TopDoor.NetworkTargetState = false;
+            this.isMoving = true;
+            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
+            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
+            this.topDoor.NetworkTargetState = false;
             yield return Timing.WaitForSeconds(3);
-            if (this.TopDoor.IsConsideredOpen())
+            if (this.topDoor.IsConsideredOpen())
             {
-                this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-                this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-                this.IsMoving = false;
+                this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+                this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+                this.isMoving = false;
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.TopTrigger.transform.position, this.TopTrigger.transform.lossyScale / 2, this.TopTrigger.transform.rotation);
+            var inRange = Physics.OverlapBox(this.topTrigger.transform.position, this.topTrigger.transform.lossyScale / 2, this.topTrigger.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
-                this.Move(item.gameObject, -this.Offset);
+                this.Move(item.gameObject, -this.offset);
 
             yield return Timing.WaitForSeconds(2);
 
-            this.BottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-            this.TopDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-            this.BottomDoor.NetworkTargetState = true;
-            this.IsOnTop = false;
-            this.IsMoving = false;
+            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.bottomDoor.NetworkTargetState = true;
+            this.isOnTop = false;
+            this.isMoving = false;
+        }
+
+        private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
+        {
+            if (!ev.IsAllowed)
+                return;
+            if (ev.Door.Base == this.bottomDoor || ev.Door.Base == this.topDoor)
+            {
+                ev.IsAllowed = false;
+                if (!this.isMoving)
+                {
+                    if (this.isOnTop)
+                        Timing.RunCoroutine(this.MoveDown());
+                    else
+                        Timing.RunCoroutine(this.MoveUp());
+                }
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ using CommandSystem;
 using Exiled.API.Features;
 using Mistaken.API.Commands;
 using Mistaken.API.Extensions;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures
@@ -31,7 +32,7 @@ namespace Mistaken.CustomStructures
 
             this.toy = new GameObject();
             this.toy.transform.position = sender.GetPlayer().Position;
-            CustomStructuresHandler.SpawnAsset(string.Join(" ", args), this.toy.transform);
+            CustomStructuresHandler.SpawnAsset((AssetMeta.AssetType)System.Enum.Parse(typeof(AssetMeta.AssetType), args[0]), this.toy.transform);
             s = true;
             return new string[] { "Spawned" };
         }

@@ -4,17 +4,15 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using System.Collections.Generic;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
 {
     internal abstract class AssetHandler
     {
-        public abstract void Initialize(Dictionary<AssetType, (GameObject Obj, Asset Asset)> spawned);
+        public abstract void Initialize(GameObject spawned, Asset asset);
 
-        public virtual bool IsColliding(AssetType[] assets) => false;
-
-        public abstract void Register();
+        public virtual bool IsColliding(AssetMeta.AssetType[] assets) => false;
     }
 }

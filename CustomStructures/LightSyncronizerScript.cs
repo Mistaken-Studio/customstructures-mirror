@@ -12,34 +12,35 @@ namespace Mistaken.CustomStructures
 {
     internal class LightSyncronizerScript : MonoBehaviour
     {
-        public LightSourceToy Toy;
-        public Light Light;
+        internal LightSourceToy Toy { get; set; }
 
-        public void Awake()
+        private Light light;
+
+        private void Awake()
         {
-            this.Light = this.GetComponent<Light>();
+            this.light = this.GetComponent<Light>();
         }
 
-        public void LateUpdate()
+        private void LateUpdate()
         {
             if (this.Toy == null)
                 return;
 
-            if (this.Toy.enabled != this.Light.enabled)
+            if (this.Toy.enabled != this.light.enabled)
             {
-                this.Toy.enabled = this.Light.enabled;
-                if (this.Light.enabled)
+                this.Toy.enabled = this.light.enabled;
+                if (this.light.enabled)
                     NetworkServer.Spawn(this.Toy.gameObject);
                 else
                     NetworkServer.UnSpawn(this.Toy.gameObject);
             }
 
-            if (this.Toy.NetworkLightColor != this.Light.color)
-                this.Toy.NetworkLightColor = this.Light.color;
-            if (this.Toy.NetworkLightIntensity != this.Light.intensity)
-                this.Toy.NetworkLightRange = this.Light.range;
-            if (this.Toy.NetworkLightShadows != (this.Light.shadows == LightShadows.Soft))
-                this.Toy.NetworkLightShadows = this.Light.shadows == LightShadows.Soft;
+            if (this.Toy.NetworkLightColor != this.light.color)
+                this.Toy.NetworkLightColor = this.light.color;
+            if (this.Toy.NetworkLightIntensity != this.light.intensity)
+                this.Toy.NetworkLightRange = this.light.range;
+            if (this.Toy.NetworkLightShadows != (this.light.shadows == LightShadows.Soft))
+                this.Toy.NetworkLightShadows = this.light.shadows == LightShadows.Soft;
         }
     }
 }
