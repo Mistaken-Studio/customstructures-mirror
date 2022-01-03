@@ -9,12 +9,14 @@ using System.Collections.Generic;
 using System.Linq;
 using AdminToys;
 using Exiled.API.Enums;
+using Exiled.API.Features;
 using Exiled.API.Features.Items;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Firearms.Ammo;
 using Mirror;
 using Mistaken.API.Extensions;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 // Code "borrowed" from
@@ -35,9 +37,11 @@ namespace Mistaken.CustomStructures
         public Dictionary<GameObject, DoorVariant> Doors { get; } = new Dictionary<GameObject, DoorVariant>();
 
         /// <summary>
-        /// Gets or sets asset name.
+        /// Gets or sets asset meta.
         /// </summary>
-        public string AssetName { get; set; }
+        public AssetMeta Meta { get; set; }
+
+        public int Spawned { get; set; } = 0;
 
         /// <summary>
         /// Gets or sets asset prefab.
@@ -162,7 +166,7 @@ namespace Mistaken.CustomStructures
 
                             default:
                                 {
-                                    var item = new Item(itemType);
+                                    var item = new Exiled.API.Features.Items.Item(itemType);
                                     item.Scale = tor.transform.localScale;
                                     var spawnd = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     spawnd.Rb.useGravity = false;
@@ -233,12 +237,45 @@ namespace Mistaken.CustomStructures
 
                         if (door != null)
                         {
+                            var doorScript = transform.gameObject.GetComponent<UnityPrefabs.Door>();
+                            if (doorScript != null)
+                            {
+                                if (doorScript.Locked)
+                                    door.ServerChangeLock(DoorLockReason.AdminCommand, true);
+                                if (!doorScript.Breakable)
+                                    (door as BreakableDoor)._brokenPrefab = null;
+                                if (doorScript.AnimatorLink != 0)
+                                {
+                                    var id = doorScript.AnimatorLink;
+                                    ConnectedAnimators[door] = null;
+                                    foreach (var animator in prefabObject.GetComponentsInChildren<Animator>())
+                                    {
+                                        if (animator.name.ToUpper().Contains($"(JOIN:{id})"))
+                                        {
+                                            ConnectedAnimators[door] = animator;
+
+                                            Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", true);
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (doorScript.DefaultState)
+                                    door.NetworkTargetState = true;
+
+                                if (doorScript.Permissions != UnityPrefabs.Door.KeycardPermissions.None)
+                                    door.RequiredPermissions.RequiredPermissions = (Interactables.Interobjects.DoorUtils.KeycardPermissions)doorScript.Permissions;
+                            }
+
                             if (nameArgs.Any(x => x.StartsWith("(LOCKED)", StringComparison.InvariantCultureIgnoreCase)))
+                            {
                                 door.ServerChangeLock(DoorLockReason.AdminCommand, true);
-                            if (!nameArgs.Any(x => x.StartsWith("(BREAKABLE)", StringComparison.InvariantCultureIgnoreCase)))
-                                (door as BreakableDoor)._brokenPrefab = null;
+                                Log.Warn("Locked flag will be removed in feature, please move to door script");
+                            }
+
                             if (nameArgs.Any(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)))
                             {
+                                Log.Warn("JOIN flag will be removed in feature, please move to door script");
                                 var arg = nameArgs.First(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)).Split(':')[1].Split(')')[0];
                                 var id = uint.Parse(arg.Split('|')[0]);
                                 if (arg.ToUpper().Contains("|ONETIMELOCKED"))
@@ -355,7 +392,7 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
             if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = byte.MaxValue;// 60;
+                ptoy.NetworkMovementSmoothing = byte.MaxValue; // 60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }
@@ -373,7 +410,7 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
             if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = byte.MaxValue;// 60;
+                ptoy.NetworkMovementSmoothing = byte.MaxValue; // 60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }

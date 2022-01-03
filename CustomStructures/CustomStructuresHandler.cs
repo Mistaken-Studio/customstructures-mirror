@@ -13,6 +13,7 @@ using Exiled.API.Features;
 using Exiled.API.Interfaces;
 using Mirror;
 using Mistaken.API.Diagnostics;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures
@@ -23,9 +24,9 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Assets bound to their name.
         /// </summary>
-        public static readonly Dictionary<string, Asset> Assets = new Dictionary<string, Asset>();
+        public static readonly Dictionary<AssetMeta.AssetType, Asset> Assets = new Dictionary<AssetMeta.AssetType, Asset>();
 
-        internal static readonly Dictionary<AssetType, AssetHandlers.AssetHandler> AssetsHandlers = new Dictionary<AssetType, AssetHandlers.AssetHandler>();
+        internal static readonly Dictionary<AssetMeta.AssetType, Type> AssetsHandlers = new Dictionary<AssetMeta.AssetType, Type>();
 
         /// <summary>
         /// Reloads <see cref="Assets"/>.
@@ -35,10 +36,19 @@ namespace Mistaken.CustomStructures
             Assets.Clear();
             foreach (var asset in GetAssets())
             {
-                Assets[asset.name.ToLower()] = new Asset
+                var meta = asset.GetComponent<AssetMeta>();
+                if (meta == null)
+                {
+                    Exiled.API.Features.Log.Warn($"Meta Script for {asset.name} not found");
+                    continue;
+                }
+
+                Exiled.API.Features.Log.Debug($"Meta Script for {asset.name} found");
+
+                Assets[meta.Type] = new Asset
                 {
                     Prefab = asset,
-                    AssetName = asset.name,
+                    Meta = meta,
                 };
             }
         }
@@ -46,14 +56,14 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Spawns asset.
         /// </summary>
-        /// <param name="name">Asset name.</param>
+        /// <param name="type">Asset Type.</param>
         /// <param name="parent">Parent if there is.</param>
         /// <returns>Spawn asset.</returns>
         /// <exception cref="ArgumentException">If asset with <paramref name="name"/> was not found.</exception>
-        public static GameObject SpawnAsset(string name, Transform parent = null)
+        public static GameObject SpawnAsset(AssetMeta.AssetType type, Transform parent = null)
         {
-            if (!TrySpawnAsset(name, parent, out var tor))
-                throw new ArgumentException($"Unknown Asset name \"{name}\"", nameof(name));
+            if (!TrySpawnAsset(type, parent, out var tor))
+                throw new ArgumentException($"Unknown Asset Type \"{type}\"", nameof(type));
 
             return tor;
         }
@@ -61,13 +71,13 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Tries to spawn asset.
         /// </summary>
-        /// <param name="name">Asset name.</param>
+        /// <param name="type">Asset Type.</param>
         /// <param name="parent">Parent if there is.</param>
         /// <param name="spawnedAsset">Spawn asset.</param>
         /// <returns>If asset was spawned.</returns>
-        public static bool TrySpawnAsset(string name, Transform parent, out GameObject spawnedAsset)
+        public static bool TrySpawnAsset(AssetMeta.AssetType type, Transform parent, out GameObject spawnedAsset)
         {
-            if (!Assets.TryGetValue(name.ToLower(), out var asset))
+            if (!Assets.TryGetValue(type, out var asset))
             {
                 spawnedAsset = null;
                 return false;
@@ -75,7 +85,7 @@ namespace Mistaken.CustomStructures
 
             spawnedAsset = asset.Spawn(parent);
 
-            Exiled.API.Features.Log.Debug($"Loaded {name}", true);
+            Exiled.API.Features.Log.Debug($"Loaded {type}", true);
 
             return true;
         }
@@ -83,13 +93,13 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Tries to spawn asset.
         /// </summary>
-        /// <param name="name">Asset name.</param>
+        /// <param name="type">Asset Type.</param>
         /// <param name="parent">Parent if there is.</param>
-        /// <param name="spawnedAsset">Spawn asset.</param>
+        /// <param name="result">Spawned asset.</param>
         /// <returns>If asset was spawned.</returns>
-        public static bool TrySpawnAssetAndGet(string name, Transform parent, out (GameObject obj, Asset asset) result)
+        public static bool TryGetAndSpawnAsset(AssetMeta.AssetType type, Transform parent, out (GameObject obj, Asset asset) result)
         {
-            if (!Assets.TryGetValue(name.ToLower(), out var asset))
+            if (!Assets.TryGetValue(type, out var asset))
             {
                 result = default;
                 return false;
@@ -97,7 +107,7 @@ namespace Mistaken.CustomStructures
 
             result = (asset.Spawn(parent), asset);
 
-            Exiled.API.Features.Log.Debug($"Loaded {name}", true);
+            Exiled.API.Features.Log.Debug($"Loaded {type}", true);
 
             return true;
         }
@@ -116,6 +126,12 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
+
+            foreach (var asset in Assets)
+            {
+                foreach (var item in asset.Value.SpawnedChildren)
+                    GameObject.Destroy(item.Key);
+            }
         }
 
         /// <inheritdoc/>
@@ -123,21 +139,8 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
-            Exiled.Events.Handlers.Player.ChangingItem += this.Player_ChangingItem;
-        }
 
-        private HelicopterScript helicopter;
-
-        private void Player_ChangingItem(Exiled.Events.EventArgs.ChangingItemEventArgs ev)
-        {
-            if (ev.NewItem?.Type == ItemType.KeycardJanitor)
-            {
-                this.helicopter.Land();
-            }
-            else if (ev.NewItem?.Type == ItemType.KeycardScientist)
-            {
-                this.helicopter.TakeOff();
-            }
+            ReloadAssets();
         }
 
         private static IEnumerable<AssetBundle> LoadBoundles(string files)
@@ -167,27 +170,35 @@ namespace Mistaken.CustomStructures
             foreach (var boundle in boundles)
                 assets.AddRange(boundle.LoadAllAssets<GameObject>());
 
+            /*foreach (var asset in assets)
+                Exiled.API.Features.Log.Debug(asset.GetComponent<AssetMeta>()?.Rules.FirstOrDefault()?.Room, true);
+
+            Exiled.API.Features.Log.Debug("==================", true);
+            foreach (var asset in assets)
+                Exiled.API.Features.Log.Debug(GameObject.Instantiate(asset).GetComponent<AssetMeta>()?.Rules.FirstOrDefault()?.Room, true);*/
+
             foreach (var boundle in boundles)
                 boundle.Unload(false);
-
             return assets;
         }
 
         private static bool HasFlag(MapModType type, MapModType flag) => (type & flag) != 0;
 
-        private readonly AssetType[] alwaysLoaded = new AssetType[]
+        private readonly AssetMeta.AssetType[] alwaysLoaded = new AssetMeta.AssetType[]
         {
-             AssetType.SURFACE_GATEA_TOWER_SCP1499_CHAMBER,
-             AssetType.SURFACE_GATEA_TOWER_ELEVATOR,
+             AssetMeta.AssetType.SURFACE_GATEA_TOWER_SCP1499_CHAMBER,
+             AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR,
 
-             // AssetType.SURFACE_CICAR,
-             AssetType.SURFACE_HELIPAD,
+             // AssetMeta.AssetType.SURFACE_CICAR,
+             AssetMeta.AssetType.SURFACE_HELIPAD,
 
-             // AssetType.SURFACE_HELICOPTER,
-             AssetType.SURFACE_GATEA_TOWER_ARMORY_BIG,
+             // AssetMeta.AssetType.SURFACE_HELICOPTER,
+             AssetMeta.AssetType.SURFACE_GATEA_TOWER_ARMORY_BIG,
 
-             AssetType.EZ_CURVE_ROOM,
-             AssetType.EZ_VENT_MEDICALROOM,
+             AssetMeta.AssetType.EZ_CURVE_ROOM,
+             AssetMeta.AssetType.EZ_VENT_MEDICALROOM,
+
+             AssetMeta.AssetType.WARHEAD_TIMER,
         };
 
         private ulong GenerateRandomULong(System.Random rng)
@@ -232,10 +243,10 @@ namespace Mistaken.CustomStructures
             return input;
         }
 
-        private AssetType[] ParseMapMods(MapModType mod)
+        private AssetMeta.AssetType[] ParseMapMods(MapModType mod)
         {
             ulong modUl = (ulong)mod;
-            List<AssetType> assets = new List<AssetType>();
+            List<AssetMeta.AssetType> assets = new List<AssetMeta.AssetType>();
             Exiled.API.Features.Log.Debug(mod, true);
             for (int i = 0; i < 64; i++)
             {
@@ -245,31 +256,31 @@ namespace Mistaken.CustomStructures
                     switch ((MapModType)(1ul << i))
                     {
                         case MapModType.SURFACE_GATEA_MIDDLE_TOWER:
-                            assets.Add(AssetType.SURFACE_GATEA_MIDDLE_TOWER);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEA_MIDDLE_TOWER);
                             break;
                         case MapModType.SURFACE_GATEA_STAIRS_LOCK:
-                            assets.Add(AssetType.SURFACE_GATEA_STAIRS_LOCK);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEA_STAIRS_LOCK);
                             break;
                         /*case MapModType.SURFACE_GATEA_TOWER_ARMORY:
                             assets.Add(AssetType.SURFACE_GATEA_TOWER_ARMORY);
                             break;*/
                         case MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR:
-                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR);
                             break;
                         case MapModType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED:
-                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEA_TUNNEL_CI_DOOR_LOCKED);
                             break;
                         case MapModType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR:
-                            assets.Add(AssetType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEA_TUNNEL_ELEVATOR_DOOR);
                             break;
                         case MapModType.SURFACE_GATEB_BRIDGE_FORWARD:
-                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_FORWARD);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEB_BRIDGE_FORWARD);
                             break;
                         case MapModType.SURFACE_GATEB_BRIDGE_LEFT:
-                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_LEFT);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEB_BRIDGE_LEFT);
                             break;
                         case MapModType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER:
-                            assets.Add(AssetType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER);
+                            assets.Add(AssetMeta.AssetType.SURFACE_GATEB_BRIDGE_LEFT_BUNKER);
                             break;
                         default:
                             break;
@@ -282,7 +293,7 @@ namespace Mistaken.CustomStructures
             return assets.ToArray();
         }
 
-        private (GameObject Obj, Asset asset) LoadAsset(AssetType assetType)
+        private Asset LoadAsset(AssetMeta.AssetType assetType)
         {
             GameObject parent = new GameObject();
             (GameObject Obj, Asset asset) spawned;
@@ -368,6 +379,23 @@ namespace Mistaken.CustomStructures
                     if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
                         this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
                     return spawned;*/
+                case AssetMeta.AssetType.WARHEAD_TIMER:
+
+                    // Surface Warhead
+                    parent = new GameObject();
+                    parent.transform.position = new Vector3(40.5f, 1000 - 7.4f, -47.481f);
+                    parent.transform.rotation = Quaternion.identity;
+                    if (!TryGetAndSpawnAsset(assetType, parent.transform, out spawned))
+                        this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
+                    var script = spawned.Obj.GetComponent<UnityPrefabs.SegmentDisplay.MutliSegmentDisplayScript>();
+                    script.Background.material.color = new Color(0, 0, 0, 0);
+                    var toy = script.Background.GetComponentInChildren<AdminToys.PrimitiveObjectToy>();
+                    if (toy != null)
+                        toy.NetworkMaterialColor = script.Background.material.color;
+                    spawned.Obj.transform.localPosition = Vector3.zero;
+                    spawned.Obj.transform.localRotation = Quaternion.identity;
+
+                    return spawned.asset;
                 default:
                     string[] args = assetType.ToString().ToUpper().Split('_');
                     string name = args[0];
@@ -375,9 +403,9 @@ namespace Mistaken.CustomStructures
                     {
                         case "SURFACE":
                             parent.transform.position = new Vector3(0, 1000, 0);
-                            if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
+                            if (!TryGetAndSpawnAsset(assetType, parent.transform, out spawned))
                                 this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
-                            return spawned;
+                            return spawned.asset;
                         default:
                             if (Enum.TryParse<RoomType>(name + args[1], true, out var roomType))
                             {
@@ -387,14 +415,14 @@ namespace Mistaken.CustomStructures
                                     parent = new GameObject();
                                     parent.transform.position = room.Position;
                                     parent.transform.rotation = room.transform.rotation;
-                                    if (!TrySpawnAssetAndGet(assetType.ToString(), parent.transform, out spawned))
+                                    if (!TryGetAndSpawnAsset(assetType, parent.transform, out spawned))
                                         this.Log.Warn($"Failed to spawn asset ({assetType}), is it present in AssetBoundle folder or in any boundle?");
                                 }
 
-                                return spawned;
+                                return spawned.asset;
                             }
 
-                            throw new ArgumentException($"Unknown {nameof(AssetType)} ({assetType})");
+                            throw new ArgumentException($"Unknown {nameof(AssetMeta.AssetType)} ({assetType})");
                     }
             }
         }
@@ -420,34 +448,95 @@ namespace Mistaken.CustomStructures
         private void Server_WaitingForPlayers()
         {
             ReloadAssets();
+            this.LoadAssets();
 
-            Dictionary<AssetType, (GameObject obj, Asset asset)> spawnedAssets = new Dictionary<AssetType, (GameObject obj, Asset asset)>();
+            /*Dictionary<AssetMeta.AssetType, Asset> spawnedAssets = new Dictionary<AssetMeta.AssetType, Asset>();
             foreach (var item in this.alwaysLoaded)
             {
                 spawnedAssets[item] = this.LoadAsset(item);
-                if(item == AssetType.SURFACE_HELICOPTER)
-                {
-                    this.helicopter = spawnedAssets[item].obj.GetComponent<HelicopterScript>();
-                    if (this.helicopter == null)
-                        this.helicopter = spawnedAssets[item].obj.GetComponentInChildren<HelicopterScript>();
-                }
             }
 
             foreach (var item in this.ParseMapMods(this.GenerateMapMods()))
                 spawnedAssets[item] = this.LoadAsset(item);
 
-            HashSet<AssetHandlers.AssetHandler> used = new HashSet<AssetHandlers.AssetHandler>();
             foreach (var assetsHandler in AssetsHandlers)
             {
-                if (used.Contains(assetsHandler.Value))
-                    continue;
                 foreach (var spawnedAsset in spawnedAssets)
                 {
                     if (assetsHandler.Key == spawnedAsset.Key)
                     {
-                        assetsHandler.Value.Initialize(spawnedAssets);
-                        used.Add(assetsHandler.Value);
+                        foreach (var item in spawnedAsset.Value.SpawnedChildren)
+                        {
+                            var handler = (AssetHandlers.AssetHandler)Activator.CreateInstance(assetsHandler.Value);
+                            handler.Initialize(item.Key, spawnedAsset.Value);
+                        }
+
                         break;
+                    }
+                }
+            }*/
+        }
+
+        private void LoadAssets()
+        {
+            var rooms = Map.Rooms.ToArray();
+            rooms.ShuffleList();
+            foreach (var room in rooms)
+            {
+                // Log.Debug($"Checking {room.Type}", true);
+                HashSet<AssetMeta.AssetType> spawned = new HashSet<AssetMeta.AssetType>();
+                foreach (var asset in Assets.Values)
+                {
+                    var meta = GameObject.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
+
+                    // Log.Debug($"Checking {asset.Meta.Type}", true);
+                    foreach (var rule in asset.Meta.Rules)
+                    {
+                        // Log.Debug($"Checking rule", true);
+                        if ((RoomType)rule.Room != room.Type)
+                            continue;
+
+                        // Log.Debug($"Found rule with matching room type", true);
+                        if (!rule.Spawn)
+                            continue;
+
+                        // Log.Debug($"Should be spawned", true);
+                        if (rule.MaxAmount <= asset.Spawned)
+                            continue;
+
+                        // Log.Debug($"Not spawned max", true);
+                        // Log.Debug(asset.Meta.Type, true);
+                        // Log.Debug(rule.MaxAmount, true);
+                        // Log.Debug(asset.Spawned, true);
+                        if (spawned.Any(x => rule.ColidingAssetTypes.Contains(x)))
+                            continue;
+
+                        // Log.Debug($"No Coliding found", true);
+                        if (rule.MinAmount <= asset.Spawned)
+                        {
+                            if (rule.Chance < UnityEngine.Random.Range(0, 100))
+                            {
+                                // Log.Debug($"Random not good", true);
+                                continue;
+                            }
+
+                            // else
+                            // Log.Debug($"Randomised", true);
+                        }
+
+                        // else
+                        // Log.Debug($"Filling min", true);
+                        GameObject parent = new GameObject();
+                        parent.transform.position = room.Position;
+                        parent.transform.rotation = room.transform.rotation;
+
+                        asset.Spawn(parent.transform);
+
+                        Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.Type}", true);
+
+                        // Log.Debug($"Spawned", true);
+                        spawned.Add(asset.Meta.Type);
+                        asset.Spawned++;
                     }
                 }
             }

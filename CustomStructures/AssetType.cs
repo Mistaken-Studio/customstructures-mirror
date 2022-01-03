@@ -6,7 +6,7 @@
 
 namespace Mistaken.CustomStructures
 {
-    internal enum AssetType
+    internal enum __AssetType
     {
         UNKNOWN = -1,
         SURFACE_GATEB_BRIDGE_FORWARD,
@@ -28,5 +28,7 @@ namespace Mistaken.CustomStructures
 
         EZ_CURVE_ROOM,
         EZ_VENT_MEDICALROOM,
+
+        WARHEAD_TIMER,
     }
 }

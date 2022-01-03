@@ -12,13 +12,14 @@ using Exiled.API.Features.Items;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Pickups;
 using MEC;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
 {
     internal class SurfaceGateATowerElevatorHandler : SingleAssetHandler
     {
-        protected override AssetType AssetType => AssetType.SURFACE_GATEA_TOWER_ELEVATOR;
+        protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR;
 
         private Transform Bottom;
         private Transform Top;
@@ -49,30 +50,11 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.Offset = this.TopTrigger.transform.position - this.BottomTrigger.transform.position;
 
             this.BottomDoor = asset.Doors[this.Bottom.Find("Entrance").Find("LCZ_DOOR").gameObject];
-            /*foreach (var item in this.Bottom.GetComponentsInChildren<Transform>())
-            {
-                Log.Debug(item.name);
-
-                if (item.name == "LCZ_DOOR")
-                {
-                    Log.Debug("AAA");
-                    this.BottomDoor = asset.Doors[item.gameObject];
-                    break;
-                }
-            }*/
 
             if (this.BottomDoor == null)
                 throw new ArgumentNullException("this.BottomDoor");
 
             this.TopDoor = asset.Doors[this.Top.Find("Entrance").Find("LCZ_DOOR").gameObject];
-            /*foreach (var item in this.Top.GetComponentsInChildren<Transform>())
-            {
-                if (item.name == "LCZ_DOOR")
-                {
-                    this.TopDoor = asset.Doors[item.gameObject];
-                    break;
-                }
-            }*/
 
             if (this.TopDoor == null)
                 throw new ArgumentNullException("this.TopDoor");
