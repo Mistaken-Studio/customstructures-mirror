@@ -37,11 +37,11 @@ namespace Mistaken.CustomStructures
                 var meta = asset.GetComponent<AssetMeta>();
                 if (meta == null)
                 {
-                    Exiled.API.Features.Log.Warn($"Meta Script for {asset.name} not found");
+                    Exiled.API.Features.Log.Debug($"Meta Script for {asset.name} not found", PluginHandler.Instance.Config.VerbouseOutput);
                     continue;
                 }
 
-                Exiled.API.Features.Log.Debug($"Meta Script for {asset.name} found");
+                Exiled.API.Features.Log.Debug($"Meta Script for {asset.name} found", PluginHandler.Instance.Config.VerbouseOutput);
 
                 Assets[meta.Type] = new Asset
                 {
@@ -83,7 +83,7 @@ namespace Mistaken.CustomStructures
 
             spawnedAsset = asset.Spawn(parent);
 
-            Exiled.API.Features.Log.Debug($"Loaded {type}", true);
+            Exiled.API.Features.Log.Debug($"Loaded {type}", PluginHandler.Instance.Config.VerbouseOutput);
 
             return true;
         }
@@ -105,7 +105,7 @@ namespace Mistaken.CustomStructures
 
             result = (asset.Spawn(parent), asset);
 
-            Exiled.API.Features.Log.Debug($"Loaded {type}", true);
+            Exiled.API.Features.Log.Debug($"Loaded {type}", PluginHandler.Instance.Config.VerbouseOutput);
 
             return true;
         }
@@ -253,7 +253,7 @@ namespace Mistaken.CustomStructures
                             }
                         }
 
-                        Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.Type}", true);
+                        Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.Type}", PluginHandler.Instance.Config.VerbouseOutput);
 
                         spawned.Add(asset.Meta.Type);
                         asset.Spawned++;

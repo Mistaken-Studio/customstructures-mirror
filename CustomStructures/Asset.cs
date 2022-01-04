@@ -191,7 +191,7 @@ namespace Mistaken.CustomStructures
                         {
                             case "HCZ_DOOR":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning HCZ Door", true);
+                                Exiled.API.Features.Log.Debug($"Spawning HCZ Door", PluginHandler.Instance.Config.VerbouseOutput);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.HCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
                                 this.Doors[transform.gameObject] = door;
@@ -200,7 +200,7 @@ namespace Mistaken.CustomStructures
 
                             case "EZ_DOOR":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning EZ Door", true);
+                                Exiled.API.Features.Log.Debug($"Spawning EZ Door", PluginHandler.Instance.Config.VerbouseOutput);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.EZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
                                 this.Doors[transform.gameObject] = door;
@@ -209,7 +209,7 @@ namespace Mistaken.CustomStructures
 
                             case "LCZ_DOOR":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning LCZ Door", true);
+                                Exiled.API.Features.Log.Debug($"Spawning LCZ Door", PluginHandler.Instance.Config.VerbouseOutput);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.LCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
                                 this.Doors[transform.gameObject] = door;
@@ -218,7 +218,7 @@ namespace Mistaken.CustomStructures
 
                             case "TARGET_DBOY":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning TARGET_DBOY", true);
+                                Exiled.API.Features.Log.Debug($"Spawning TARGET_DBOY", PluginHandler.Instance.Config.VerbouseOutput);
                                 var dBoy = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.ClassD, Vector3.zero).Base;
                                 dBoy.transform.position = tor.transform.position;
                                 dBoy.transform.eulerAngles = tor.transform.eulerAngles;
@@ -228,7 +228,7 @@ namespace Mistaken.CustomStructures
 
                             case "WORK_STATION":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning WORK_STATION", true);
+                                Exiled.API.Features.Log.Debug($"Spawning WORK_STATION", PluginHandler.Instance.Config.VerbouseOutput);
                                 var workStation = GameObject.Instantiate(CustomNetworkManager.singleton.spawnPrefabs.First(x => x.name == "Work Station"));
                                 workStation.transform.position = tor.transform.position;
                                 workStation.transform.rotation = tor.transform.rotation;
@@ -260,7 +260,7 @@ namespace Mistaken.CustomStructures
                                         {
                                             ConnectedAnimators[door] = animator;
 
-                                            Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", true);
+                                            Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", PluginHandler.Instance.Config.VerbouseOutput);
                                             break;
                                         }
                                     }
@@ -295,7 +295,7 @@ namespace Mistaken.CustomStructures
                                     {
                                         ConnectedAnimators[door] = animator;
 
-                                        Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", true);
+                                        Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", PluginHandler.Instance.Config.VerbouseOutput);
                                         break;
                                     }
                                 }
@@ -398,7 +398,7 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
             if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = byte.MaxValue; // 60;
+                ptoy.NetworkMovementSmoothing = 60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }
@@ -416,7 +416,7 @@ namespace Mistaken.CustomStructures
             ptoy.transform.localScale = Vector3.one;
             ptoy.NetworkScale = ptoy.transform.localScale;
             if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = byte.MaxValue; // 60;
+                ptoy.NetworkMovementSmoothing = 60;
             NetworkServer.Spawn(toy.gameObject);
             return ptoy;
         }
