@@ -350,75 +350,14 @@ namespace Mistaken.CustomStructures
         internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
         internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
 
-        private static LightSourceToy primitiveBaseLight = null;
-        private static PrimitiveObjectToy primitiveBaseObject = null;
-
-        private static PrimitiveObjectToy PrimitiveBaseObject
-        {
-            get
-            {
-                if (primitiveBaseObject == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<PrimitiveObjectToy>(out var component))
-                            primitiveBaseObject = component;
-                    }
-                }
-
-                return primitiveBaseObject;
-            }
-        }
-
-        private static LightSourceToy PrimitiveBaseLight
-        {
-            get
-            {
-                if (primitiveBaseLight == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<LightSourceToy>(out var component))
-                            primitiveBaseLight = component;
-                    }
-                }
-
-                return primitiveBaseLight;
-            }
-        }
-
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
         {
-            AdminToyBase toy = UnityEngine.Object.Instantiate(PrimitiveBaseObject, parent);
-            PrimitiveObjectToy ptoy = toy.GetComponent<PrimitiveObjectToy>();
-            ptoy.NetworkPrimitiveType = type;
-            ptoy.NetworkMaterialColor = color;
-            ptoy.transform.localPosition = Vector3.zero;
-            ptoy.transform.localRotation = Quaternion.identity;
-            ptoy.transform.localScale = Vector3.one;
-            ptoy.NetworkScale = ptoy.transform.localScale;
-            if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = 60;
-            NetworkServer.Spawn(toy.gameObject);
-            return ptoy;
+            return API.Extensions.Extensions.SpawnPrimitive(type, parent, color, !(parent.GetComponentsInParent<Animator>() is null));
         }
 
         private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)
         {
-            AdminToyBase toy = UnityEngine.Object.Instantiate(PrimitiveBaseLight, parent);
-            LightSourceToy ptoy = toy.GetComponent<LightSourceToy>();
-            ptoy.NetworkLightColor = color;
-            ptoy.NetworkLightIntensity = intensity;
-            ptoy.NetworkLightRange = range;
-            ptoy.NetworkLightShadows = shadows;
-            ptoy.transform.localPosition = Vector3.zero;
-            ptoy.transform.localRotation = Quaternion.identity;
-            ptoy.transform.localScale = Vector3.one;
-            ptoy.NetworkScale = ptoy.transform.localScale;
-            if (HighUpdateRate.Contains(parent))
-                ptoy.NetworkMovementSmoothing = 60;
-            NetworkServer.Spawn(toy.gameObject);
-            return ptoy;
+            return API.Extensions.Extensions.SpawnLight(parent, color, intensity, range, shadows, !(parent.GetComponentsInParent<Animator>() is null));
         }
 
         private static GameObject CreateEmpty(Transform parent)
