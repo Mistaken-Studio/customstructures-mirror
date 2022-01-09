@@ -11,6 +11,7 @@ using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Interfaces;
+using MEC;
 using Mirror;
 using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs;
@@ -202,10 +203,10 @@ namespace Mistaken.CustomStructures
         private void Server_WaitingForPlayers()
         {
             ReloadAssets();
-            this.LoadAssets();
+            this.RunCoroutine(this.LoadAssets());
         }
 
-        private void LoadAssets()
+        private IEnumerator<float> LoadAssets()
         {
             var rooms = Map.Rooms.ToArray();
             rooms.ShuffleList();
@@ -257,6 +258,7 @@ namespace Mistaken.CustomStructures
 
                         spawned.Add(asset.Meta.Type);
                         asset.Spawned++;
+                        yield return Timing.WaitForSeconds(0.05f);
                     }
                 }
             }
