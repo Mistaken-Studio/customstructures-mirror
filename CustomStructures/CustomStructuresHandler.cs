@@ -125,6 +125,7 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
+            Mistaken.Events.Handlers.CustomEvents.RequestPickItem -= this.CustomEvents_RequestPickItem;
 
             foreach (var asset in Assets)
             {
@@ -144,6 +145,7 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
+            Mistaken.Events.Handlers.CustomEvents.RequestPickItem += this.CustomEvents_RequestPickItem;
 
             ReloadAssets();
         }
@@ -187,8 +189,8 @@ namespace Mistaken.CustomStructures
             if (!ev.IsAllowed)
                 return;
 
-            if (Asset.ConnectedAnimators.TryGetValue(ev.Door.Base, out var animator))
-                animator.SetBool("IsOpen", !ev.Door.IsOpen);
+            if (Asset.ConnectedDoorAnimators.TryGetValue(ev.Door.Base, out var animator))
+                animator.Animator.SetBool(animator.Name, animator.Toggle ? !ev.Door.IsOpen : animator.Value);
 
             if (Asset.RemovePostUse.Contains(ev.Door.Base))
                 this.CallDelayed(.25f, () => NetworkServer.Destroy(ev.Door.Base.gameObject));
@@ -196,6 +198,21 @@ namespace Mistaken.CustomStructures
             if (Asset.LockPostUse.Contains(ev.Door.Base))
             {
                 ev.Door.Base.ServerChangeLock(Interactables.Interobjects.DoorUtils.DoorLockReason.SpecialDoorFeature, true);
+                ev.IsAllowed = false;
+            }
+        }
+
+        private void CustomEvents_RequestPickItem(Events.EventArgs.PickItemRequestEventArgs ev)
+        {
+            if (!ev.IsAllowed)
+                return;
+
+            if (Asset.ConnectedItemAnimators.TryGetValue(ev.Pickup.Base, out var animator))
+                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.name) : animator.Value);
+
+            if (Asset.RemovePostUseItem.Contains(ev.Pickup.Base))
+            {
+                this.CallDelayed(.25f, () => ev.Pickup.Destroy());
                 ev.IsAllowed = false;
             }
         }

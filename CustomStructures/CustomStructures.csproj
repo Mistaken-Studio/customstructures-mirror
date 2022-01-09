@@ -37,6 +37,9 @@
   <ItemGroup>
     <Reference Include="Exiled.API" HintPath="$(MISTAKEN_REFERENCES)\Exiled.API.dll" />
     <Reference Include="Exiled.Events" HintPath="$(MISTAKEN_REFERENCES)\Exiled.Events.dll" />
+    <Reference Include="Mistaken.Events">
+      <HintPath>..\..\..\..\MistakenReferences\Mistaken.Events.dll</HintPath>
+    </Reference>
     <Reference Include="Mistaken.UnityPrefabs">
       <HintPath>$(MISTAKEN_REFERENCES)\Mistaken.UnityPrefabs.dll</HintPath>
     </Reference>
