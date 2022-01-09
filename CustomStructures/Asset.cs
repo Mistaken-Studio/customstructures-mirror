@@ -352,12 +352,12 @@ namespace Mistaken.CustomStructures
 
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
         {
-            return API.Extensions.Extensions.SpawnPrimitive(type, parent, color, !(parent.GetComponentsInParent<Animator>() is null));
+            return API.MapPlus.SpawnPrimitive(type, parent, color, !(parent.GetComponentsInParent<Animator>() is null));
         }
 
         private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)
         {
-            return API.Extensions.Extensions.SpawnLight(parent, color, intensity, range, shadows, !(parent.GetComponentsInParent<Animator>() is null));
+            return API.MapPlus.SpawnLight(parent, color, intensity, range, shadows, !(parent.GetComponentsInParent<Animator>() is null));
         }
 
         private static GameObject CreateEmpty(Transform parent)
