@@ -352,12 +352,46 @@ namespace Mistaken.CustomStructures
 
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
         {
-            return API.MapPlus.SpawnPrimitive(type, parent, color, !(parent.GetComponentsInParent<Animator>() is null));
+            bool sync = false;
+            var meta = parent.GetComponentInParent<AssetMeta>();
+            if (meta != null)
+            {
+                var tmpParent = parent;
+                while (tmpParent != null)
+                {
+                    if (meta.MovableObjects.Contains(tmpParent.gameObject))
+                    {
+                        sync = true;
+                        break;
+                    }
+
+                    tmpParent = tmpParent.parent;
+                }
+            }
+
+            return API.MapPlus.SpawnPrimitive(type, parent, color, sync, sync ? (byte?)60 : null);
         }
 
         private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)
         {
-            return API.MapPlus.SpawnLight(parent, color, intensity, range, shadows, !(parent.GetComponentsInParent<Animator>() is null));
+            bool sync = false;
+            var meta = parent.GetComponentInParent<AssetMeta>();
+            if (meta != null)
+            {
+                var tmpParent = parent;
+                while (tmpParent != null)
+                {
+                    if (meta.MovableObjects.Contains(tmpParent.gameObject))
+                    {
+                        sync = true;
+                        break;
+                    }
+
+                    tmpParent = tmpParent.parent;
+                }
+            }
+
+            return API.MapPlus.SpawnLight(parent, color, intensity, range, shadows, sync, sync ? (byte?)60 : null);
         }
 
         private static GameObject CreateEmpty(Transform parent)
