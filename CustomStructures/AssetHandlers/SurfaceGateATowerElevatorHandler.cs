@@ -26,13 +26,13 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.bottom = spawned.transform.Find("Surface_GateA_Tower_Elevator_Bottom");
             this.top = spawned.transform.Find("Surface_GateA_Tower_Elevator_Top");
 
-            this.bottomTrigger = this.bottom.transform.Find("Trigger");
-            if (this.bottomTrigger == null)
-                throw new ArgumentNullException("BottomTrigger");
-            this.topTrigger = this.top.transform.Find("Trigger");
-            if (this.topTrigger == null)
-                throw new ArgumentNullException("TopTrigger");
-            this.offset = this.topTrigger.transform.position - this.bottomTrigger.transform.position;
+            this.bottomFloor = this.bottom.transform.Find("Floor");
+            if (this.bottomFloor == null)
+                throw new ArgumentNullException("bottomFloor");
+            this.topFloor = this.top.transform.Find("Floor");
+            if (this.topFloor == null)
+                throw new ArgumentNullException("topFloor");
+            this.offset = this.topFloor.transform.position - this.bottomFloor.transform.position;
 
             this.bottomDoor = asset.Doors[this.bottom.Find("Entrance").Find("LCZ_DOOR").gameObject];
 
@@ -64,8 +64,8 @@ namespace Mistaken.CustomStructures.AssetHandlers
         private Transform bottom;
         private Transform top;
 
-        private Transform bottomTrigger;
-        private Transform topTrigger;
+        private Transform bottomFloor;
+        private Transform topFloor;
         private Vector3 offset;
 
         private DoorVariant bottomDoor;
@@ -107,7 +107,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.bottomTrigger.transform.position, this.bottomTrigger.transform.lossyScale / 2, this.bottomTrigger.transform.rotation);
+            var inRange = Physics.OverlapBox(this.bottomFloor.transform.position, this.bottomFloor.transform.lossyScale / 2, this.bottomFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
                 this.Move(item.gameObject, this.offset);
@@ -165,7 +165,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.topTrigger.transform.position, this.topTrigger.transform.lossyScale / 2, this.topTrigger.transform.rotation);
+            var inRange = Physics.OverlapBox(this.topFloor.transform.position, this.topFloor.transform.lossyScale / 2, this.topFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
                 this.Move(item.gameObject, -this.offset);
