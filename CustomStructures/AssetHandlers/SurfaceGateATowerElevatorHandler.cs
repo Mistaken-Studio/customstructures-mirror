@@ -113,12 +113,13 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 this.Move(item.gameObject, this.offset);
 
             yield return Timing.WaitForSeconds(2);
-
-            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.topDoor.NetworkTargetState = true;
             this.isOnTop = true;
+            yield return Timing.WaitForSeconds(5);
+
             this.isMoving = false;
+            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
         }
 
         private void Move(GameObject item, Vector3 offset)
@@ -172,11 +173,13 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
             yield return Timing.WaitForSeconds(2);
 
-            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.bottomDoor.NetworkTargetState = true;
             this.isOnTop = false;
+            yield return Timing.WaitForSeconds(5);
+
             this.isMoving = false;
+            this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
+            this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
         }
 
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
