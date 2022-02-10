@@ -314,14 +314,34 @@ namespace Mistaken.CustomStructures
 
                     switch (nameArgs[0])
                     {
-                        case "TARGET_DBOY":
+                        case "BINARY_TARGET":
                             transform.gameObject.SetActive(false);
-                            Exiled.API.Features.Log.Debug($"Spawning TARGET_DBOY", PluginHandler.Instance.Config.VerbouseOutput);
-                            var dBoy = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.ClassD, Vector3.zero).Base;
-                            dBoy.transform.position = tor.transform.position;
-                            dBoy.transform.eulerAngles = tor.transform.eulerAngles;
-                            dBoy.transform.localScale = tor.transform.localScale;
-                            this.SpawnedChildren[prefabObject].Add(dBoy.gameObject);
+                            Exiled.API.Features.Log.Debug($"Spawning BINARY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
+                            var binary = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.Binary, Vector3.zero).Base;
+                            binary.transform.position = tor.transform.position;
+                            binary.transform.eulerAngles = tor.transform.eulerAngles;
+                            binary.transform.localScale = tor.transform.localScale;
+                            this.SpawnedChildren[prefabObject].Add(binary.gameObject);
+                            break;
+
+                        case "DBOY_TARGET":
+                            transform.gameObject.SetActive(false);
+                            Exiled.API.Features.Log.Debug($"Spawning DBOY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
+                            var dboy = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.ClassD, Vector3.zero).Base;
+                            dboy.transform.position = tor.transform.position;
+                            dboy.transform.eulerAngles = tor.transform.eulerAngles;
+                            dboy.transform.localScale = tor.transform.localScale;
+                            this.SpawnedChildren[prefabObject].Add(dboy.gameObject);
+                            break;
+
+                        case "SPORT_TARGET":
+                            transform.gameObject.SetActive(false);
+                            Exiled.API.Features.Log.Debug($"Spawning SPORT_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
+                            var sport = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.Sport, Vector3.zero).Base;
+                            sport.transform.position = tor.transform.position;
+                            sport.transform.eulerAngles = tor.transform.eulerAngles;
+                            sport.transform.localScale = tor.transform.localScale;
+                            this.SpawnedChildren[prefabObject].Add(sport.gameObject);
                             break;
 
                         case "WORK_STATION":
