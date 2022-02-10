@@ -320,13 +320,9 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Exiled.API.Features.Log.Debug($"Spawning BINARY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var binary = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.Binary, Vector3.zero).Base;
-                                binary.transform.position = tor.transform.position;
-                                binary.transform.eulerAngles = tor.transform.eulerAngles;
-                                binary.transform.localScale = tor.transform.localScale;
-                                NetworkServer.UnSpawn(binary.gameObject);
-                                NetworkServer.Spawn(binary.gameObject);
-                                this.SpawnedChildren[prefabObject].Add(binary.gameObject);
+                                var target = SpawnShootingTarget(ShootingTargetType.Binary, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+
+                                this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
                             }
 
@@ -334,13 +330,9 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Exiled.API.Features.Log.Debug($"Spawning DBOY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var dboy = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.ClassD, Vector3.zero).Base;
-                                dboy.transform.position = tor.transform.position;
-                                dboy.transform.eulerAngles = tor.transform.eulerAngles;
-                                dboy.transform.localScale = tor.transform.localScale;
-                                NetworkServer.UnSpawn(dboy.gameObject);
-                                NetworkServer.Spawn(dboy.gameObject);
-                                this.SpawnedChildren[prefabObject].Add(dboy.gameObject);
+                                var target = SpawnShootingTarget(ShootingTargetType.ClassD, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+
+                                this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
                             }
 
@@ -348,13 +340,9 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Exiled.API.Features.Log.Debug($"Spawning SPORT_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var sport = Exiled.API.Features.ShootingTarget.Spawn(ShootingTargetType.Sport, Vector3.zero).Base;
-                                sport.transform.position = tor.transform.position;
-                                sport.transform.eulerAngles = tor.transform.eulerAngles;
-                                sport.transform.localScale = tor.transform.localScale;
-                                NetworkServer.UnSpawn(sport.gameObject);
-                                NetworkServer.Spawn(sport.gameObject);
-                                this.SpawnedChildren[prefabObject].Add(sport.gameObject);
+                                var target = SpawnShootingTarget(ShootingTargetType.Sport, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+
+                                this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
                             }
 
@@ -474,6 +462,92 @@ namespace Mistaken.CustomStructures
             tor.transform.localRotation = Quaternion.identity;
             tor.transform.localScale = Vector3.one;
             return tor;
+        }
+
+        private static AdminToys.ShootingTarget SpawnShootingTarget(ShootingTargetType type, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            AdminToyBase prefab;
+            switch (type)
+            {
+                case ShootingTargetType.Binary:
+                    prefab = ShootingTargetObjectBinary;
+                    break;
+                case ShootingTargetType.Sport:
+                    prefab = ShootingTargetObjectSport;
+                    break;
+                case ShootingTargetType.ClassD:
+                    prefab = ShootingTargetObjectDBoy;
+                    break;
+                default:
+                    return null;
+            }
+
+            AdminToyBase toy = UnityEngine.Object.Instantiate(prefab);
+            AdminToys.ShootingTarget ptoy = toy.GetComponent<AdminToys.ShootingTarget>();
+            ptoy.transform.position = position;
+            ptoy.transform.rotation = rotation;
+            ptoy.transform.localScale = scale;
+            ptoy.NetworkScale = ptoy.transform.lossyScale;
+            NetworkServer.Spawn(toy.gameObject);
+
+            ptoy.UpdatePositionServer();
+
+            return ptoy;
+        }
+
+        private static AdminToys.ShootingTarget shootingTargetObject_binary = null;
+        private static AdminToys.ShootingTarget shootingTargetObject_sport = null;
+        private static AdminToys.ShootingTarget shootingTargetObject_dboy = null;
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectBinary
+        {
+            get
+            {
+                if (shootingTargetObject_binary == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
+                            shootingTargetObject_binary = component;
+                    }
+                }
+
+                return shootingTargetObject_binary;
+            }
+        }
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectSport
+        {
+            get
+            {
+                if (shootingTargetObject_sport == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
+                            shootingTargetObject_sport = component;
+                    }
+                }
+
+                return shootingTargetObject_sport;
+            }
+        }
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectDBoy
+        {
+            get
+            {
+                if (shootingTargetObject_dboy == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
+                            shootingTargetObject_dboy = component;
+                    }
+                }
+
+                return shootingTargetObject_dboy;
+            }
         }
     }
 }
