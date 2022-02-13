@@ -37,7 +37,29 @@ namespace Mistaken.CustomStructures.AssetHandlers
             foreach (var segment in this.display.segments)
             {
                 segment.EnabledColor = LockedColor;
-                segment.DisabledColor = new Color(0, 0, 0, 0);
+
+                // segment.DisabledColor = new Color(0, 0, 0, 0);
+                var toy = segment.TopSegment.GetComponentInChildren<PrimitiveObjectToy>();
+                if (toy != null)
+                    this.displayToys[segment.TopSegment] = toy;
+                toy = segment.LeftTopSegment.GetComponentInChildren<PrimitiveObjectToy>();
+                if (toy != null)
+                    this.displayToys[segment.LeftTopSegment] = toy;
+                toy = segment.RightTopSegment.GetComponentInChildren<PrimitiveObjectToy>();
+                if (toy != null)
+                    this.displayToys[segment.RightTopSegment] = toy;
+                toy = segment.MiddleSegment.GetComponentInChildren<PrimitiveObjectToy>();
+                if (toy != null)
+                    this.displayToys[segment.MiddleSegment] = toy;
+                toy = segment.LeftBottomSegment.GetComponentInChildren<PrimitiveObjectToy>();
+                if (toy != null)
+                    this.displayToys[segment.LeftBottomSegment] = toy;
+                toy = segment.RightBottomSegment.GetComponentInChildren<PrimitiveObjectToy>();
+                if (toy != null)
+                    this.displayToys[segment.RightBottomSegment] = toy;
+                toy = segment.BottomSegment.GetComponentInChildren<PrimitiveObjectToy>();
+                if (toy != null)
+                    this.displayToys[segment.BottomSegment] = toy;
             }
 
             foreach (var segment in this.display.segments)
@@ -65,10 +87,11 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         private static Color LockedColor { get; } = Color.green;
 
-        private static Color PausedColor { get; } = Color.yellow;
+        private static Color PausedColor { get; } = Color.green;
 
-        private static Color InProgressColor { get; } = Color.red;
+        private static Color InProgressColor { get; } = Color.green;
 
+        private readonly Dictionary<MeshRenderer, PrimitiveObjectToy> displayToys = new Dictionary<MeshRenderer, PrimitiveObjectToy>();
         private MutliSegmentDisplayScript display;
 
         private IEnumerator<float> UpdateTimer()
@@ -99,28 +122,22 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         private void SyncColors()
         {
+            PrimitiveObjectToy toy;
             foreach (var segment in this.display.segments)
             {
-                var toy = segment.TopSegment.GetComponentInChildren<PrimitiveObjectToy>();
-                if (toy != null)
+                if (this.displayToys.TryGetValue(segment.TopSegment, out toy))
                     toy.NetworkMaterialColor = segment.TopSegment.material.color;
-                toy = segment.LeftTopSegment.GetComponentInChildren<PrimitiveObjectToy>();
-                if (toy != null)
+                if (this.displayToys.TryGetValue(segment.LeftTopSegment, out toy))
                     toy.NetworkMaterialColor = segment.LeftTopSegment.material.color;
-                toy = segment.RightTopSegment.GetComponentInChildren<PrimitiveObjectToy>();
-                if (toy != null)
+                if (this.displayToys.TryGetValue(segment.RightTopSegment, out toy))
                     toy.NetworkMaterialColor = segment.RightTopSegment.material.color;
-                toy = segment.MiddleSegment.GetComponentInChildren<PrimitiveObjectToy>();
-                if (toy != null)
+                if (this.displayToys.TryGetValue(segment.MiddleSegment, out toy))
                     toy.NetworkMaterialColor = segment.MiddleSegment.material.color;
-                toy = segment.LeftBottomSegment.GetComponentInChildren<PrimitiveObjectToy>();
-                if (toy != null)
+                if (this.displayToys.TryGetValue(segment.LeftBottomSegment, out toy))
                     toy.NetworkMaterialColor = segment.LeftBottomSegment.material.color;
-                toy = segment.RightBottomSegment.GetComponentInChildren<PrimitiveObjectToy>();
-                if (toy != null)
+                if (this.displayToys.TryGetValue(segment.RightBottomSegment, out toy))
                     toy.NetworkMaterialColor = segment.RightBottomSegment.material.color;
-                toy = segment.BottomSegment.GetComponentInChildren<PrimitiveObjectToy>();
-                if (toy != null)
+                if (this.displayToys.TryGetValue(segment.BottomSegment, out toy))
                     toy.NetworkMaterialColor = segment.BottomSegment.material.color;
             }
         }

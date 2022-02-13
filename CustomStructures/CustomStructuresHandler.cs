@@ -27,12 +27,15 @@ namespace Mistaken.CustomStructures
         /// </summary>
         public static readonly Dictionary<AssetMeta.AssetType, Asset> Assets = new Dictionary<AssetMeta.AssetType, Asset>();
 
+        public static readonly List<Asset> UnknownAssets = new List<Asset>();
+
         /// <summary>
         /// Reloads <see cref="Assets"/>.
         /// </summary>
         public static void ReloadAssets()
         {
             Assets.Clear();
+            UnknownAssets.Clear();
             foreach (var asset in GetAssets())
             {
                 var meta = asset.GetComponent<AssetMeta>();
@@ -44,11 +47,22 @@ namespace Mistaken.CustomStructures
 
                 Exiled.API.Features.Log.Debug($"Meta Script for {asset.name} found", PluginHandler.Instance.Config.VerbouseOutput);
 
-                Assets[meta.Type] = new Asset
+                if (meta.Type == AssetMeta.AssetType.UNKNOWN)
                 {
-                    Prefab = asset,
-                    Meta = meta,
-                };
+                    UnknownAssets.Add(new Asset
+                    {
+                        Prefab = asset,
+                        Meta = meta,
+                    });
+                }
+                else
+                {
+                    Assets[meta.Type] = new Asset
+                    {
+                        Prefab = asset,
+                        Meta = meta,
+                    };
+                }
             }
         }
 
@@ -275,7 +289,45 @@ namespace Mistaken.CustomStructures
 
                         spawned.Add(asset.Meta.Type);
                         asset.Spawned++;
-                        yield return Timing.WaitForSeconds(0.05f);
+                        yield return Timing.WaitForOneFrame;
+                    }
+                }
+
+                foreach (var asset in UnknownAssets)
+                {
+                    var meta = GameObject.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
+
+                    foreach (var rule in asset.Meta.Rules)
+                    {
+                        if ((RoomType)rule.Room != room.Type)
+                            continue;
+
+                        if (!rule.Spawn)
+                            continue;
+
+                        if (rule.MaxAmount <= asset.Spawned)
+                            continue;
+
+                        if (spawned.Any(x => rule.ColidingAssetTypes.Contains(x)))
+                            continue;
+
+                        if (rule.MinAmount <= asset.Spawned)
+                        {
+                            if (rule.Chance < UnityEngine.Random.Range(0, 100))
+                                continue;
+                        }
+
+                        GameObject parent = new GameObject();
+                        parent.transform.parent = room.transform;
+                        parent.transform.position = room.Position;
+                        parent.transform.rotation = room.transform.rotation;
+
+                        var instance = asset.Spawn(parent.transform);
+
+                        Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.name}", PluginHandler.Instance.Config.VerbouseOutput);
+
+                        asset.Spawned++;
+                        yield return Timing.WaitForOneFrame;
                     }
                 }
             }

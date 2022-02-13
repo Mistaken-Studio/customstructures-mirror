@@ -91,7 +91,7 @@ namespace Mistaken.CustomStructures
 
             foreach (var transform in prefabObject.GetComponentsInChildren<Transform>())
             {
-                if (!transform.gameObject.activeSelf)
+                if (!transform.gameObject.activeInHierarchy)
                     continue;
                 if (
                     transform.name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase) ||
@@ -115,7 +115,7 @@ namespace Mistaken.CustomStructures
 
             foreach (var transform in prefabObject.GetComponentsInChildren<Transform>())
             {
-                if (!transform.gameObject.activeSelf)
+                if (!transform.gameObject.activeInHierarchy)
                     continue;
                 if (transform.TryGetComponent<Light>(out Light light))
                 {
@@ -134,11 +134,10 @@ namespace Mistaken.CustomStructures
                     string name = transform.name;
                     string[] nameArgs = name.Split(' ');
                     var tor = CreateEmpty(transform);
-                    if (transform.TryGetComponent<UnityPrefabs.Door>(out UnityPrefabs.Door doorScript))
+                    if (transform.TryGetComponent(out UnityPrefabs.Door doorScript))
                     {
                         DoorVariant door = null;
 
-                        // Exiled.API.Features.Log.Debug($"Spawning GameObject ({nameArgs[0]})", true);
                         switch (nameArgs[0])
                         {
                             case "HCZ_DOOR":
@@ -194,39 +193,6 @@ namespace Mistaken.CustomStructures
                             var animatorTriggerScript = transform.gameObject.GetComponent<UnityPrefabs.AnimatorTrigger>();
                             if (animatorTriggerScript != null)
                                 ConnectedDoorAnimators[door] = animatorTriggerScript;
-
-                            if (nameArgs.Any(x => x.StartsWith("(LOCKED)", StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                door.ServerChangeLock(DoorLockReason.AdminCommand, true);
-                                Log.Warn("Locked flag will be removed in feature, please move to door script");
-                            }
-
-                            if (nameArgs.Any(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                Log.Warn("JOIN flag will be removed in feature, please move to door script");
-                                var arg = nameArgs.First(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)).Split(':')[1].Split(')')[0];
-                                var id = uint.Parse(arg.Split('|')[0]);
-                                if (arg.ToUpper().Contains("|ONETIMELOCKED"))
-                                    LockPostUse.Add(door);
-                                else if (arg.ToUpper().Contains("|ONETIME"))
-                                    RemovePostUse.Add(door);
-                                ConnectedDoorAnimators[door] = null;
-                                foreach (var animator in prefabObject.GetComponentsInChildren<Animator>())
-                                {
-                                    if (animator.name.ToUpper().Contains($"(JOIN:{id})"))
-                                    {
-                                        ConnectedDoorAnimators[door] = new AnimatorTrigger()
-                                        {
-                                            Animator = animator,
-                                            Toggle = true,
-                                            Name = "IsOpen",
-                                        };
-
-                                        Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", PluginHandler.Instance.Config.VerbouseOutput);
-                                        break;
-                                    }
-                                }
-                            }
                         }
                     }
                     else if (transform.TryGetComponent<UnityPrefabs.Item>(out UnityPrefabs.Item itemScript))
