@@ -376,6 +376,61 @@ namespace Mistaken.CustomStructures
         internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
         internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
 
+        private static AdminToys.ShootingTarget shootingTargetObject_binary = null;
+        private static AdminToys.ShootingTarget shootingTargetObject_sport = null;
+        private static AdminToys.ShootingTarget shootingTargetObject_dboy = null;
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectBinary
+        {
+            get
+            {
+                if (shootingTargetObject_binary == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
+                            shootingTargetObject_binary = component;
+                    }
+                }
+
+                return shootingTargetObject_binary;
+            }
+        }
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectSport
+        {
+            get
+            {
+                if (shootingTargetObject_sport == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
+                            shootingTargetObject_sport = component;
+                    }
+                }
+
+                return shootingTargetObject_sport;
+            }
+        }
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectDBoy
+        {
+            get
+            {
+                if (shootingTargetObject_dboy == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
+                            shootingTargetObject_dboy = component;
+                    }
+                }
+
+                return shootingTargetObject_dboy;
+            }
+        }
+
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
         {
             bool sync = false;
@@ -459,61 +514,6 @@ namespace Mistaken.CustomStructures
             ptoy.UpdatePositionServer();
 
             return ptoy;
-        }
-
-        private static AdminToys.ShootingTarget shootingTargetObject_binary = null;
-        private static AdminToys.ShootingTarget shootingTargetObject_sport = null;
-        private static AdminToys.ShootingTarget shootingTargetObject_dboy = null;
-
-        private static AdminToys.ShootingTarget ShootingTargetObjectBinary
-        {
-            get
-            {
-                if (shootingTargetObject_binary == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
-                            shootingTargetObject_binary = component;
-                    }
-                }
-
-                return shootingTargetObject_binary;
-            }
-        }
-
-        private static AdminToys.ShootingTarget ShootingTargetObjectSport
-        {
-            get
-            {
-                if (shootingTargetObject_sport == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
-                            shootingTargetObject_sport = component;
-                    }
-                }
-
-                return shootingTargetObject_sport;
-            }
-        }
-
-        private static AdminToys.ShootingTarget ShootingTargetObjectDBoy
-        {
-            get
-            {
-                if (shootingTargetObject_dboy == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
-                            shootingTargetObject_dboy = component;
-                    }
-                }
-
-                return shootingTargetObject_dboy;
-            }
         }
     }
 }

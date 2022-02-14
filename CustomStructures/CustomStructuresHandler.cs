@@ -23,14 +23,17 @@ namespace Mistaken.CustomStructures
     public class CustomStructuresHandler : Module
     {
         /// <summary>
-        /// Assets bound to their name.
+        /// Assets bound to their type.
         /// </summary>
         public static readonly Dictionary<AssetMeta.AssetType, Asset> Assets = new Dictionary<AssetMeta.AssetType, Asset>();
 
+        /// <summary>
+        /// Unidentified Assets.
+        /// </summary>
         public static readonly List<Asset> UnknownAssets = new List<Asset>();
 
         /// <summary>
-        /// Reloads <see cref="Assets"/>.
+        /// Reloads <see cref="Assets"/> and <see cref="UnknownAssets"/>.
         /// </summary>
         public static void ReloadAssets()
         {
