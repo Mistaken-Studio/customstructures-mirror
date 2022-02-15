@@ -128,6 +128,21 @@ namespace Mistaken.CustomStructures
             return true;
         }
 
+        /// <summary>
+        /// Tries to get asset.
+        /// </summary>
+        /// <param name="name">Asset Name.</param>
+        /// <param name="asset">Asset.</param>
+        /// <returns>If asset was returned.</returns>
+        public static bool TryGetAsset(string name, out Asset asset)
+        {
+            asset = UnknownAssets.SingleOrDefault(x => x.Prefab.name == name);
+            if (asset is null)
+                return false;
+
+            return true;
+        }
+
         /// <inheritdoc cref="Module.Module(IPlugin{IConfig})"/>
         public CustomStructuresHandler(IPlugin<IConfig> plugin)
             : base(plugin)
@@ -147,6 +162,16 @@ namespace Mistaken.CustomStructures
             foreach (var asset in Assets)
             {
                 foreach (var item in asset.Value.SpawnedChildren)
+                {
+                    foreach (var item2 in item.Value)
+                        GameObject.Destroy(item2);
+                    GameObject.Destroy(item.Key);
+                }
+            }
+
+            foreach (var asset in UnknownAssets)
+            {
+                foreach (var item in asset.SpawnedChildren)
                 {
                     foreach (var item2 in item.Value)
                         GameObject.Destroy(item2);
