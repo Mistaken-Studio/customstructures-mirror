@@ -9,10 +9,14 @@ using UnityEngine;
 
 namespace Mistaken.CustomStructures.AssetHandlers
 {
-    internal abstract class AssetHandler
+    internal abstract class AssetHandler : MonoBehaviour
     {
-        public abstract void Initialize(GameObject spawned, Asset asset);
+        public abstract void Initialize(Asset asset);
 
         public virtual bool IsColliding(AssetMeta.AssetType[] assets) => false;
+
+        public virtual void OnScriptTrigger(string name)
+        {
+        }
     }
 }

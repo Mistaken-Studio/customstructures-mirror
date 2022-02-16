@@ -187,6 +187,10 @@ namespace Mistaken.CustomStructures
                             var animatorTriggerScript = transform.gameObject.GetComponent<UnityPrefabs.AnimatorTrigger>();
                             if (animatorTriggerScript != null)
                                 ConnectedDoorAnimators[door] = animatorTriggerScript;
+
+                            var scriptTriggerScript = transform.gameObject.GetComponent<ScriptTrigger>();
+                            if (scriptTriggerScript != null)
+                                ConnectedDoorScriptTriggers[door] = scriptTriggerScript;
                         }
                     }
                     else if (transform.TryGetComponent<UnityPrefabs.Item>(out UnityPrefabs.Item itemScript))
@@ -272,6 +276,10 @@ namespace Mistaken.CustomStructures
                         var animatorTriggerScript = transform.gameObject.GetComponent<UnityPrefabs.AnimatorTrigger>();
                         if (animatorTriggerScript != null)
                             ConnectedItemAnimators[spawned] = animatorTriggerScript;
+
+                        var scriptTriggerScript = transform.gameObject.GetComponent<ScriptTrigger>();
+                        if (scriptTriggerScript != null)
+                            ConnectedItemScriptTriggers[spawned] = scriptTriggerScript;
                     }
 
                     switch (nameArgs[0])
@@ -367,6 +375,10 @@ namespace Mistaken.CustomStructures
 
         internal static readonly Dictionary<DoorVariant, AnimatorTrigger> ConnectedDoorAnimators = new Dictionary<DoorVariant, AnimatorTrigger>();
         internal static readonly Dictionary<ItemPickupBase, AnimatorTrigger> ConnectedItemAnimators = new Dictionary<ItemPickupBase, AnimatorTrigger>();
+
+        internal static readonly Dictionary<DoorVariant, ScriptTrigger> ConnectedDoorScriptTriggers = new Dictionary<DoorVariant, ScriptTrigger>();
+        internal static readonly Dictionary<ItemPickupBase, ScriptTrigger> ConnectedItemScriptTriggers = new Dictionary<ItemPickupBase, ScriptTrigger>();
+
         internal static readonly HashSet<DoorVariant> RemovePostUse = new HashSet<DoorVariant>();
         internal static readonly HashSet<ItemPickupBase> RemovePostUseItem = new HashSet<ItemPickupBase>();
         internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
