@@ -442,6 +442,7 @@ namespace Mistaken.CustomStructures
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color, bool hasCollision)
         {
             bool sync = false;
+            bool colorSync = false;
             var meta = parent.GetComponentInParent<AssetMeta>();
             if (meta != null)
             {
@@ -454,11 +455,22 @@ namespace Mistaken.CustomStructures
                         break;
                     }
 
+                    if (meta.ColorChangableObjects.Contains(tmpParent.gameObject))
+                    {
+                        colorSync = true;
+                        break;
+                    }
+
                     tmpParent = tmpParent.parent;
                 }
             }
 
-            return API.MapPlus.SpawnPrimitive(type, parent, color, hasCollision, sync, sync ? (byte?)60 : null);
+            var toy = API.MapPlus.SpawnPrimitive(type, parent, color, hasCollision, sync, sync ? (byte?)60 : null);
+
+            if (colorSync)
+                toy.gameObject.AddComponent<ColorSynchronizerScript>();
+
+            return toy;
         }
 
         private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)

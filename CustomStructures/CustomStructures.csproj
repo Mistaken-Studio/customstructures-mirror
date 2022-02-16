@@ -63,7 +63,9 @@
   <ItemGroup>
     <Compile Include="Asset.cs" />
     <Compile Include="AssetHandlers\AssetHandler.cs" />
+    <Compile Include="AssetHandlers\ElectricalRoomHandler.cs" />
     <Compile Include="AssetHandlers\WarheadTimerHandler.cs" />
+    <Compile Include="ColorSynchronizerScript.cs" />
     <Compile Include="PathLightHandler.cs" />
     <Compile Include="LightSyncronizerScript.cs" />
     <Compile Include="DestructionInformerScript.cs" />

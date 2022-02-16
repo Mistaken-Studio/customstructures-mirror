@@ -20,7 +20,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
         public override void Initialize(Asset asset)
         {
             base.Initialize(asset);
-            this.display = this.gameObject.GetComponent<MutliSegmentDisplayScript>();
+            this.display = this.gameObject.GetComponent<MultiSegmentDisplayScript>();
 
             this.display.SetText("--");
 
@@ -40,7 +40,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.WARHEAD_TIMER;
 
-        private MutliSegmentDisplayScript display;
+        private MultiSegmentDisplayScript display;
 
         private IEnumerator<float> UpdateTimer()
         {

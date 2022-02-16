@@ -14,6 +14,7 @@ using Exiled.API.Interfaces;
 using MEC;
 using Mirror;
 using Mistaken.API.Diagnostics;
+using Mistaken.CustomStructures.AssetHandlers;
 using Mistaken.UnityPrefabs;
 using UnityEngine;
 
@@ -197,7 +198,7 @@ namespace Mistaken.CustomStructures
         private static IEnumerable<AssetBundle> LoadBoundles(string files)
         {
             List<AssetBundle> tor = new List<AssetBundle>();
-            foreach (var item in Directory.GetFiles(files))
+            foreach (var item in Directory.GetFiles(files).Where(x => !x.EndsWith(".manifest")))
                 tor.Add(AssetBundle.LoadFromFile(item));
 
             foreach (var item in Directory.GetDirectories(files))
@@ -326,11 +327,15 @@ namespace Mistaken.CustomStructures
                             if (assetsHandler.Key == asset.Meta.Type)
                             {
                                 var handler = (AssetHandlers.AssetHandler)instance.AddComponent(assetsHandler.Value);
-                                handler.Initialize(asset);
+
+                                this.CallDelayed(10, () =>
+                                {
+                                    handler.Initialize(asset);
+                                });
+
                                 if (!this.AssetHandlers.ContainsKey(assetsHandler.Key))
                                     this.AssetHandlers.Add(assetsHandler.Key, new List<AssetHandlers.AssetHandler>());
                                 this.AssetHandlers[assetsHandler.Key].Add(handler);
-
                                 break;
                             }
                         }
