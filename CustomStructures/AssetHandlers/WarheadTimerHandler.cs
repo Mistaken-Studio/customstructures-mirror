@@ -17,10 +17,10 @@ namespace Mistaken.CustomStructures.AssetHandlers
 {
     internal class WarheadTimerHandler : SingleAssetHandler
     {
-        public override void Initialize(GameObject spawned, Asset asset)
+        public override void Initialize(Asset asset)
         {
-            base.Initialize(spawned, asset);
-            this.display = this.GameObject.GetComponent<MutliSegmentDisplayScript>();
+            base.Initialize(asset);
+            this.display = this.gameObject.GetComponent<MutliSegmentDisplayScript>();
 
             this.display.SetText("--");
 
@@ -30,10 +30,8 @@ namespace Mistaken.CustomStructures.AssetHandlers
             Exiled.Events.Handlers.Player.ActivatingWarheadPanel += this.Player_ActivatingWarheadPanel;
         }
 
-        public override void OnDeinitialize(GameObject gameObject)
+        public override void OnDestroy()
         {
-            base.OnDeinitialize(gameObject);
-
             Exiled.Events.Handlers.Warhead.Starting -= this.Warhead_Starting;
             Exiled.Events.Handlers.Warhead.Stopping -= this.Warhead_Stopping;
             Exiled.Events.Handlers.Warhead.Detonated -= this.Warhead_Detonated;

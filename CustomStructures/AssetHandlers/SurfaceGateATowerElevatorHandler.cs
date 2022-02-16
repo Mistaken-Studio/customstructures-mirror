@@ -19,12 +19,12 @@ namespace Mistaken.CustomStructures.AssetHandlers
 {
     internal class SurfaceGateATowerElevatorHandler : SingleAssetHandler
     {
-        public override void Initialize(GameObject spawned, Asset asset)
+        public override void Initialize(Asset asset)
         {
-            base.Initialize(spawned, asset);
+            base.Initialize(asset);
 
-            this.bottom = spawned.transform.Find("Surface_GateA_Tower_Elevator_Bottom");
-            this.top = spawned.transform.Find("Surface_GateA_Tower_Elevator_Top");
+            this.bottom = this.gameObject.transform.Find("Surface_GateA_Tower_Elevator_Bottom");
+            this.top = this.gameObject.transform.Find("Surface_GateA_Tower_Elevator_Top");
 
             this.bottomFloor = this.bottom.transform.Find("Floor");
             if (this.bottomFloor == null)
@@ -53,9 +53,8 @@ namespace Mistaken.CustomStructures.AssetHandlers
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
         }
 
-        public override void OnDeinitialize(GameObject gameObject)
+        public override void OnDestroy()
         {
-            base.OnDeinitialize(gameObject);
             Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
         }
 
