@@ -96,6 +96,7 @@ namespace Mistaken.CustomStructures
         private void Server_RoundStarted()
         {
             // this.GeneratePath(Map.Rooms.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
+            this.ClearPath();
             this.IniPath();
         }
 

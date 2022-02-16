@@ -83,12 +83,6 @@ namespace Mistaken.CustomStructures
             prefabObject.hideFlags = HideFlags.HideAndDontSave;
             this.SpawnedChildren[prefabObject] = new List<GameObject>();
 
-            foreach (var item in prefabObject.GetComponentsInChildren<Animator>())
-            {
-                foreach (var item2 in item.GetComponentsInChildren<Transform>())
-                    HighUpdateRate.Add(item2);
-            }
-
             foreach (var transform in prefabObject.GetComponentsInChildren<Transform>())
             {
                 if (!transform.gameObject.activeInHierarchy)
@@ -217,7 +211,7 @@ namespace Mistaken.CustomStructures
                             case ItemType.Ammo9x19:
                                 {
                                     var item = new Ammo(itemType);
-                                    item.Scale = tor.transform.localScale;
+                                    item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     (spawned as AmmoPickup).NetworkSavedAmmo = itemScript.Ammo;
                                     spawned.Rb.useGravity = false;
@@ -234,7 +228,7 @@ namespace Mistaken.CustomStructures
                             case ItemType.GunShotgun:
                                 {
                                     var item = new Exiled.API.Features.Items.Firearm(itemType);
-                                    item.Scale = tor.transform.localScale;
+                                    item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     spawned.Rb.useGravity = false;
                                     spawned.Rb.isKinematic = true;
@@ -244,7 +238,7 @@ namespace Mistaken.CustomStructures
                             default:
                                 {
                                     var item = new Exiled.API.Features.Items.Item(itemType);
-                                    item.Scale = tor.transform.localScale;
+                                    item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     spawned.Rb.useGravity = false;
                                     spawned.Rb.isKinematic = true;
@@ -335,6 +329,7 @@ namespace Mistaken.CustomStructures
                     continue;
 
                 PrimitiveType type = PrimitiveType.Sphere;
+                bool hasCollision = transform.TryGetComponent<Collider>(out _);
 
                 switch (filter.mesh.name)
                 {
@@ -363,7 +358,8 @@ namespace Mistaken.CustomStructures
                 this.SpawnedChildren[prefabObject].Add(CreatePrimitive(
                     transform,
                     type,
-                    renderer.material.color).gameObject);
+                    renderer.material.color,
+                    hasCollision).gameObject);
             }
 
             return prefabObject;
@@ -431,7 +427,7 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
+        private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color, bool hasCollision)
         {
             bool sync = false;
             var meta = parent.GetComponentInParent<AssetMeta>();
@@ -450,7 +446,7 @@ namespace Mistaken.CustomStructures
                 }
             }
 
-            return API.MapPlus.SpawnPrimitive(type, parent, color, sync, sync ? (byte?)60 : null);
+            return API.MapPlus.SpawnPrimitive(type, parent, color, hasCollision, sync, sync ? (byte?)60 : null);
         }
 
         private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)

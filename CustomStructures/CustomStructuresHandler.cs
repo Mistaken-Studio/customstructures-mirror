@@ -250,7 +250,10 @@ namespace Mistaken.CustomStructures
                 return;
 
             if (Asset.ConnectedItemAnimators.TryGetValue(ev.Pickup.Base, out var animator))
-                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.name) : animator.Value);
+            {
+                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.Name) : animator.Value);
+                ev.IsAllowed = false;
+            }
 
             if (Asset.RemovePostUseItem.Contains(ev.Pickup.Base))
             {
