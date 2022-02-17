@@ -4,13 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using Exiled.API.Features;
-using Exiled.API.Features.Items;
-using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Pickups;
 using MEC;
 using Mistaken.UnityPrefabs;
@@ -26,31 +20,15 @@ namespace Mistaken.CustomStructures.AssetHandlers
             base.Initialize(asset);
 
             this.SetLever();
-            if (this.Lever is null || this.Display is null)
+            if (this.lever is null || this.display is null)
                 this.Invoke(nameof(this.SetLever), 5);
 
-            this.ItemTrigger = Asset.ConnectedItemScriptTriggers.Single(x => x.Value.Name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER").Key;
-        }
-
-        private void SetLever()
-        {
-            this.Lever = this.gameObject.GetComponentInChildren<Animator>();
-            this.Display = this.gameObject.GetComponentInChildren<TimerSegmentScript>();
-            this.Display?.SetText("----");
+            this.triggerItem = Asset.ConnectedItemScriptTriggers.Single(x => x.Value.Name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER").Key;
         }
 
         public override void OnDestroy()
         {
         }
-
-        protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.EZ_ELECTRICALROOM;
-
-        private Animator Lever;
-        private TimerSegmentScript Display;
-        private ItemPickupBase ItemTrigger;
-
-        private bool currentState = true;
-        private bool cooldown = false;
 
         public override void OnScriptTrigger(string name)
         {
@@ -60,23 +38,39 @@ namespace Mistaken.CustomStructures.AssetHandlers
             if (name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER")
             {
                 this.currentState = !this.currentState;
-                this.Lever.SetBool("Enabled", this.currentState);
+                this.lever.SetBool("Enabled", this.currentState);
 
                 if (this.currentState)
                 {
                     API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.ENABLED;
-                    Cassie.Message("FACILITY WIDE OVERRIDE . TESLA GATES ENGAGED");
+                    Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES ENGAGED", false, false, true);
                 }
                 else
                 {
                     API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.DISABLED;
-                    Cassie.Message("FACILITY WIDE OVERRIDE . TESLA GATES DISENGAGED");
+                    Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES DISENGAGED", false, false, true);
                 }
 
                 this.cooldown = true;
-                this.Display.SetTime(300);
-                this.Display.OnFinishCounting = () => this.cooldown = false;
+                this.display.SetTime(300);
+                this.display.OnFinishCounting = () => this.cooldown = false;
             }
+        }
+
+        protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.EZ_ELECTRICALROOM;
+
+        private Animator lever;
+        private TimerSegmentScript display;
+        private ItemPickupBase triggerItem;
+
+        private bool currentState = true;
+        private bool cooldown = false;
+
+        private void SetLever()
+        {
+            this.lever = this.gameObject.GetComponentInChildren<Animator>();
+            this.display = this.gameObject.GetComponentInChildren<TimerSegmentScript>();
+            this.display?.SetText("----");
         }
     }
 }
