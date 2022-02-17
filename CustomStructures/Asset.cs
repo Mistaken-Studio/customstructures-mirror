@@ -83,15 +83,9 @@ namespace Mistaken.CustomStructures
             prefabObject.hideFlags = HideFlags.HideAndDontSave;
             this.SpawnedChildren[prefabObject] = new List<GameObject>();
 
-            foreach (var item in prefabObject.GetComponentsInChildren<Animator>())
-            {
-                foreach (var item2 in item.GetComponentsInChildren<Transform>())
-                    HighUpdateRate.Add(item2);
-            }
-
             foreach (var transform in prefabObject.GetComponentsInChildren<Transform>())
             {
-                if (!transform.gameObject.activeSelf)
+                if (!transform.gameObject.activeInHierarchy)
                     continue;
                 if (
                     transform.name.StartsWith("SPAWN_", StringComparison.InvariantCultureIgnoreCase) ||
@@ -115,7 +109,7 @@ namespace Mistaken.CustomStructures
 
             foreach (var transform in prefabObject.GetComponentsInChildren<Transform>())
             {
-                if (!transform.gameObject.activeSelf)
+                if (!transform.gameObject.activeInHierarchy)
                     continue;
                 if (transform.TryGetComponent<Light>(out Light light))
                 {
@@ -134,11 +128,10 @@ namespace Mistaken.CustomStructures
                     string name = transform.name;
                     string[] nameArgs = name.Split(' ');
                     var tor = CreateEmpty(transform);
-                    if (transform.TryGetComponent<UnityPrefabs.Door>(out UnityPrefabs.Door doorScript))
+                    if (transform.TryGetComponent(out UnityPrefabs.Door doorScript))
                     {
                         DoorVariant door = null;
 
-                        // Exiled.API.Features.Log.Debug($"Spawning GameObject ({nameArgs[0]})", true);
                         switch (nameArgs[0])
                         {
                             case "HCZ_DOOR":
@@ -194,39 +187,6 @@ namespace Mistaken.CustomStructures
                             var animatorTriggerScript = transform.gameObject.GetComponent<UnityPrefabs.AnimatorTrigger>();
                             if (animatorTriggerScript != null)
                                 ConnectedDoorAnimators[door] = animatorTriggerScript;
-
-                            if (nameArgs.Any(x => x.StartsWith("(LOCKED)", StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                door.ServerChangeLock(DoorLockReason.AdminCommand, true);
-                                Log.Warn("Locked flag will be removed in feature, please move to door script");
-                            }
-
-                            if (nameArgs.Any(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)))
-                            {
-                                Log.Warn("JOIN flag will be removed in feature, please move to door script");
-                                var arg = nameArgs.First(x => x.StartsWith("(JOIN:", StringComparison.InvariantCultureIgnoreCase)).Split(':')[1].Split(')')[0];
-                                var id = uint.Parse(arg.Split('|')[0]);
-                                if (arg.ToUpper().Contains("|ONETIMELOCKED"))
-                                    LockPostUse.Add(door);
-                                else if (arg.ToUpper().Contains("|ONETIME"))
-                                    RemovePostUse.Add(door);
-                                ConnectedDoorAnimators[door] = null;
-                                foreach (var animator in prefabObject.GetComponentsInChildren<Animator>())
-                                {
-                                    if (animator.name.ToUpper().Contains($"(JOIN:{id})"))
-                                    {
-                                        ConnectedDoorAnimators[door] = new AnimatorTrigger()
-                                        {
-                                            Animator = animator,
-                                            Toggle = true,
-                                            Name = "IsOpen",
-                                        };
-
-                                        Exiled.API.Features.Log.Debug($"Joined {transform.gameObject.name} with {animator.name}", PluginHandler.Instance.Config.VerbouseOutput);
-                                        break;
-                                    }
-                                }
-                            }
                         }
                     }
                     else if (transform.TryGetComponent<UnityPrefabs.Item>(out UnityPrefabs.Item itemScript))
@@ -251,7 +211,7 @@ namespace Mistaken.CustomStructures
                             case ItemType.Ammo9x19:
                                 {
                                     var item = new Ammo(itemType);
-                                    item.Scale = tor.transform.localScale;
+                                    item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     (spawned as AmmoPickup).NetworkSavedAmmo = itemScript.Ammo;
                                     spawned.Rb.useGravity = false;
@@ -268,7 +228,7 @@ namespace Mistaken.CustomStructures
                             case ItemType.GunShotgun:
                                 {
                                     var item = new Exiled.API.Features.Items.Firearm(itemType);
-                                    item.Scale = tor.transform.localScale;
+                                    item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     spawned.Rb.useGravity = false;
                                     spawned.Rb.isKinematic = true;
@@ -278,7 +238,7 @@ namespace Mistaken.CustomStructures
                             default:
                                 {
                                     var item = new Exiled.API.Features.Items.Item(itemType);
-                                    item.Scale = tor.transform.localScale;
+                                    item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     spawned.Rb.useGravity = false;
                                     spawned.Rb.isKinematic = true;
@@ -369,6 +329,7 @@ namespace Mistaken.CustomStructures
                     continue;
 
                 PrimitiveType type = PrimitiveType.Sphere;
+                bool hasCollision = transform.TryGetComponent<Collider>(out _);
 
                 switch (filter.mesh.name)
                 {
@@ -397,7 +358,8 @@ namespace Mistaken.CustomStructures
                 this.SpawnedChildren[prefabObject].Add(CreatePrimitive(
                     transform,
                     type,
-                    renderer.material.color).gameObject);
+                    renderer.material.color,
+                    hasCollision).gameObject);
             }
 
             return prefabObject;
@@ -410,7 +372,62 @@ namespace Mistaken.CustomStructures
         internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
         internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
 
-        private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color)
+        private static AdminToys.ShootingTarget shootingTargetObject_binary = null;
+        private static AdminToys.ShootingTarget shootingTargetObject_sport = null;
+        private static AdminToys.ShootingTarget shootingTargetObject_dboy = null;
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectBinary
+        {
+            get
+            {
+                if (shootingTargetObject_binary == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
+                            shootingTargetObject_binary = component;
+                    }
+                }
+
+                return shootingTargetObject_binary;
+            }
+        }
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectSport
+        {
+            get
+            {
+                if (shootingTargetObject_sport == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
+                            shootingTargetObject_sport = component;
+                    }
+                }
+
+                return shootingTargetObject_sport;
+            }
+        }
+
+        private static AdminToys.ShootingTarget ShootingTargetObjectDBoy
+        {
+            get
+            {
+                if (shootingTargetObject_dboy == null)
+                {
+                    foreach (var gameObject in NetworkClient.prefabs.Values)
+                    {
+                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
+                            shootingTargetObject_dboy = component;
+                    }
+                }
+
+                return shootingTargetObject_dboy;
+            }
+        }
+
+        private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color, bool hasCollision)
         {
             bool sync = false;
             var meta = parent.GetComponentInParent<AssetMeta>();
@@ -429,7 +446,7 @@ namespace Mistaken.CustomStructures
                 }
             }
 
-            return API.MapPlus.SpawnPrimitive(type, parent, color, sync, sync ? (byte?)60 : null);
+            return API.MapPlus.SpawnPrimitive(type, parent, color, hasCollision, sync, sync ? (byte?)60 : null);
         }
 
         private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)
@@ -493,61 +510,6 @@ namespace Mistaken.CustomStructures
             ptoy.UpdatePositionServer();
 
             return ptoy;
-        }
-
-        private static AdminToys.ShootingTarget shootingTargetObject_binary = null;
-        private static AdminToys.ShootingTarget shootingTargetObject_sport = null;
-        private static AdminToys.ShootingTarget shootingTargetObject_dboy = null;
-
-        private static AdminToys.ShootingTarget ShootingTargetObjectBinary
-        {
-            get
-            {
-                if (shootingTargetObject_binary == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
-                            shootingTargetObject_binary = component;
-                    }
-                }
-
-                return shootingTargetObject_binary;
-            }
-        }
-
-        private static AdminToys.ShootingTarget ShootingTargetObjectSport
-        {
-            get
-            {
-                if (shootingTargetObject_sport == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
-                            shootingTargetObject_sport = component;
-                    }
-                }
-
-                return shootingTargetObject_sport;
-            }
-        }
-
-        private static AdminToys.ShootingTarget ShootingTargetObjectDBoy
-        {
-            get
-            {
-                if (shootingTargetObject_dboy == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
-                            shootingTargetObject_dboy = component;
-                    }
-                }
-
-                return shootingTargetObject_dboy;
-            }
         }
     }
 }

@@ -5,10 +5,15 @@
 // -----------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using HarmonyLib;
+using Mirror;
+using Mistaken.API;
 using Mistaken.UnityPrefabs;
+using UnityEngine;
 
 namespace Mistaken.CustomStructures
 {
@@ -28,7 +33,7 @@ namespace Mistaken.CustomStructures
         public override PluginPriority Priority => PluginPriority.Default;
 
         /// <inheritdoc/>
-        public override Version RequiredExiledVersion => new Version(4, 1, 2);
+        public override System.Version RequiredExiledVersion => new System.Version(4, 1, 2);
 
         /// <inheritdoc/>
         public override void OnEnabled()
@@ -39,6 +44,7 @@ namespace Mistaken.CustomStructures
             this.harmony.PatchAll();
 
             new CustomStructuresHandler(this);
+            new PathLightHandler(this);
 
             CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR] = typeof(AssetHandlers.SurfaceGateATowerElevatorHandler);
             CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.WARHEAD_TIMER] = typeof(AssetHandlers.WarheadTimerHandler);

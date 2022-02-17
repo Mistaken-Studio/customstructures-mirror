@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using AdminToys;
+using Exiled.API.Features;
 using Mirror;
 using UnityEngine;
 
@@ -38,6 +39,8 @@ namespace Mistaken.CustomStructures
             if (this.Toy.NetworkLightColor != this.light.color)
                 this.Toy.NetworkLightColor = this.light.color;
             if (this.Toy.NetworkLightIntensity != this.light.intensity)
+                this.Toy.NetworkLightIntensity = this.light.intensity;
+            if (this.Toy.NetworkLightRange != this.light.range)
                 this.Toy.NetworkLightRange = this.light.range;
             if (this.Toy.NetworkLightShadows != (this.light.shadows == LightShadows.Soft))
                 this.Toy.NetworkLightShadows = this.light.shadows == LightShadows.Soft;

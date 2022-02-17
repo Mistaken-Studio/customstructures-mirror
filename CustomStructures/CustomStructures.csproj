@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -64,6 +64,7 @@
     <Compile Include="Asset.cs" />
     <Compile Include="AssetHandlers\AssetHandler.cs" />
     <Compile Include="AssetHandlers\WarheadTimerHandler.cs" />
+    <Compile Include="PathLightHandler.cs" />
     <Compile Include="LightSyncronizerScript.cs" />
     <Compile Include="DestructionInformerScript.cs" />
     <Compile Include="AssetHandlers\SingleAssetHandler.cs" />

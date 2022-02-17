@@ -23,16 +23,22 @@ namespace Mistaken.CustomStructures
     public class CustomStructuresHandler : Module
     {
         /// <summary>
-        /// Assets bound to their name.
+        /// Assets bound to their type.
         /// </summary>
         public static readonly Dictionary<AssetMeta.AssetType, Asset> Assets = new Dictionary<AssetMeta.AssetType, Asset>();
 
         /// <summary>
-        /// Reloads <see cref="Assets"/>.
+        /// Unidentified Assets.
+        /// </summary>
+        public static readonly List<Asset> UnknownAssets = new List<Asset>();
+
+        /// <summary>
+        /// Reloads <see cref="Assets"/> and <see cref="UnknownAssets"/>.
         /// </summary>
         public static void ReloadAssets()
         {
             Assets.Clear();
+            UnknownAssets.Clear();
             foreach (var asset in GetAssets())
             {
                 var meta = asset.GetComponent<AssetMeta>();
@@ -44,11 +50,22 @@ namespace Mistaken.CustomStructures
 
                 Exiled.API.Features.Log.Debug($"Meta Script for {asset.name} found", PluginHandler.Instance.Config.VerbouseOutput);
 
-                Assets[meta.Type] = new Asset
+                if (meta.Type == AssetMeta.AssetType.UNKNOWN)
                 {
-                    Prefab = asset,
-                    Meta = meta,
-                };
+                    UnknownAssets.Add(new Asset
+                    {
+                        Prefab = asset,
+                        Meta = meta,
+                    });
+                }
+                else
+                {
+                    Assets[meta.Type] = new Asset
+                    {
+                        Prefab = asset,
+                        Meta = meta,
+                    };
+                }
             }
         }
 
@@ -111,6 +128,21 @@ namespace Mistaken.CustomStructures
             return true;
         }
 
+        /// <summary>
+        /// Tries to get asset.
+        /// </summary>
+        /// <param name="name">Asset Name.</param>
+        /// <param name="asset">Asset.</param>
+        /// <returns>If asset was returned.</returns>
+        public static bool TryGetAsset(string name, out Asset asset)
+        {
+            asset = UnknownAssets.SingleOrDefault(x => x.Prefab.name == name);
+            if (asset is null)
+                return false;
+
+            return true;
+        }
+
         /// <inheritdoc cref="Module.Module(IPlugin{IConfig})"/>
         public CustomStructuresHandler(IPlugin<IConfig> plugin)
             : base(plugin)
@@ -130,6 +162,16 @@ namespace Mistaken.CustomStructures
             foreach (var asset in Assets)
             {
                 foreach (var item in asset.Value.SpawnedChildren)
+                {
+                    foreach (var item2 in item.Value)
+                        GameObject.Destroy(item2);
+                    GameObject.Destroy(item.Key);
+                }
+            }
+
+            foreach (var asset in UnknownAssets)
+            {
+                foreach (var item in asset.SpawnedChildren)
                 {
                     foreach (var item2 in item.Value)
                         GameObject.Destroy(item2);
@@ -208,7 +250,10 @@ namespace Mistaken.CustomStructures
                 return;
 
             if (Asset.ConnectedItemAnimators.TryGetValue(ev.Pickup.Base, out var animator))
-                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.name) : animator.Value);
+            {
+                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.Name) : animator.Value);
+                ev.IsAllowed = false;
+            }
 
             if (Asset.RemovePostUseItem.Contains(ev.Pickup.Base))
             {
@@ -275,7 +320,45 @@ namespace Mistaken.CustomStructures
 
                         spawned.Add(asset.Meta.Type);
                         asset.Spawned++;
-                        yield return Timing.WaitForSeconds(0.05f);
+                        yield return Timing.WaitForOneFrame;
+                    }
+                }
+
+                foreach (var asset in UnknownAssets)
+                {
+                    var meta = GameObject.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
+
+                    foreach (var rule in asset.Meta.Rules)
+                    {
+                        if ((RoomType)rule.Room != room.Type)
+                            continue;
+
+                        if (!rule.Spawn)
+                            continue;
+
+                        if (rule.MaxAmount <= asset.Spawned)
+                            continue;
+
+                        if (spawned.Any(x => rule.ColidingAssetTypes.Contains(x)))
+                            continue;
+
+                        if (rule.MinAmount <= asset.Spawned)
+                        {
+                            if (rule.Chance < UnityEngine.Random.Range(0, 100))
+                                continue;
+                        }
+
+                        GameObject parent = new GameObject();
+                        parent.transform.parent = room.transform;
+                        parent.transform.position = room.Position;
+                        parent.transform.rotation = room.transform.rotation;
+
+                        var instance = asset.Spawn(parent.transform);
+
+                        Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.name}", PluginHandler.Instance.Config.VerbouseOutput);
+
+                        asset.Spawned++;
+                        yield return Timing.WaitForOneFrame;
                     }
                 }
             }
