@@ -468,7 +468,7 @@ namespace Mistaken.CustomStructures
             var toy = API.MapPlus.SpawnPrimitive(type, parent, color, hasCollision, sync, sync ? (byte?)60 : null);
 
             if (colorSync)
-                toy.gameObject.AddComponent<ColorSynchronizerScript>();
+                parent.gameObject.AddComponent<ColorSynchronizerScript>().Toy = toy;
 
             return toy;
         }

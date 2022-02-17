@@ -227,6 +227,8 @@ namespace Mistaken.CustomStructures
             return assets;
         }
 
+        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>> assetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>>();
+
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {
             if (!ev.IsAllowed)
@@ -237,7 +239,7 @@ namespace Mistaken.CustomStructures
 
             if (Asset.ConnectedDoorScriptTriggers.TryGetValue(ev.Door.Base, out var trigger))
             {
-                foreach (var item in this.AssetHandlers.Values.SelectMany(x => x))
+                foreach (var item in this.assetHandlers.Values.SelectMany(x => x))
                     item.OnScriptTrigger(trigger.Name);
                 ev.IsAllowed = false;
             }
@@ -265,7 +267,7 @@ namespace Mistaken.CustomStructures
 
             if (Asset.ConnectedItemScriptTriggers.TryGetValue(ev.Pickup.Base, out var trigger))
             {
-                foreach (var item in this.AssetHandlers.Values.SelectMany(x => x))
+                foreach (var item in this.assetHandlers.Values.SelectMany(x => x))
                     item.OnScriptTrigger(trigger.Name);
                 ev.IsAllowed = false;
             }
@@ -282,8 +284,6 @@ namespace Mistaken.CustomStructures
             ReloadAssets();
             this.RunCoroutine(this.LoadAssets());
         }
-
-        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>> AssetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>>();
 
         private IEnumerator<float> LoadAssets()
         {
@@ -333,9 +333,9 @@ namespace Mistaken.CustomStructures
                                     handler.Initialize(asset);
                                 });
 
-                                if (!this.AssetHandlers.ContainsKey(assetsHandler.Key))
-                                    this.AssetHandlers.Add(assetsHandler.Key, new List<AssetHandlers.AssetHandler>());
-                                this.AssetHandlers[assetsHandler.Key].Add(handler);
+                                if (!this.assetHandlers.ContainsKey(assetsHandler.Key))
+                                    this.assetHandlers.Add(assetsHandler.Key, new List<AssetHandlers.AssetHandler>());
+                                this.assetHandlers[assetsHandler.Key].Add(handler);
                                 break;
                             }
                         }
