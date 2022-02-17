@@ -3,18 +3,13 @@
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
-
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Interfaces;
-using MEC;
 using Mirror;
 using Mistaken.API.Diagnostics;
-using Mistaken.UnityPrefabs;
 using Mistaken.UnityPrefabs.PathLights;
 using UnityEngine;
 
@@ -52,17 +47,22 @@ namespace Mistaken.CustomStructures
             Exiled.Events.Handlers.Warhead.Detonated += this.Warhead_Detonated;
         }
 
+        private bool enabled = false;
         private bool lockPath_Decontamination = false;
         private bool lockPath_Warhead = false;
 
         private void Warhead_Detonated()
         {
+            if (!this.enabled)
+                return;
             this.lockPath_Warhead = false;
             this.RemovePathLightsFrom(ZoneType.LightContainment, ZoneType.HeavyContainment, ZoneType.Entrance);
         }
 
         private void Warhead_Stopping(Exiled.Events.EventArgs.StoppingEventArgs ev)
         {
+            if (!this.enabled)
+                return;
             this.lockPath_Warhead = false;
             this.ClearPath();
             if (this.lockPath_Decontamination)
@@ -71,12 +71,16 @@ namespace Mistaken.CustomStructures
 
         private void Warhead_Starting(Exiled.Events.EventArgs.StartingEventArgs ev)
         {
+            if (!this.enabled)
+                return;
             this.lockPath_Warhead = true;
             this.GeneratePath(Map.Rooms.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
         }
 
         private void Map_AnnouncingDecontamination(Exiled.Events.EventArgs.AnnouncingDecontaminationEventArgs ev)
         {
+            if (!this.enabled)
+                return;
             if (ev.Id == 3)
             {
                 this.lockPath_Decontamination = true;
@@ -95,9 +99,18 @@ namespace Mistaken.CustomStructures
 
         private void Server_RoundStarted()
         {
+            if (CustomStructuresHandler.UnknownAssets.Any(x => !(x.Meta.GetComponentInChildren<PathLightController>() is null)))
+                this.enabled = true;
+            else
+            {
+                this.enabled = false;
+                return;
+            }
+
             // this.GeneratePath(Map.Rooms.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
             this.ClearPath();
-            this.IniPath();
+
+            // this.IniPath();
         }
 
         private void RemovePathLightsFrom(params ZoneType[] zones)
@@ -118,6 +131,7 @@ namespace Mistaken.CustomStructures
             }
         }
 
+        [System.Obsolete]
         private void IniPath()
         {
             foreach (var item in GameObject.FindObjectsOfType<PathLightController>().Where(x => !(x.GetComponentInParent<Room>() is null)))
@@ -126,8 +140,12 @@ namespace Mistaken.CustomStructures
 
         private void ClearPath()
         {
-            foreach (var item in GameObject.FindObjectsOfType<PathLightController>())
-                item.SetTargetSide(PathLightController.Side.NONE);
+            foreach (var controller in GameObject.FindObjectsOfType<PathLightController>())
+            {
+                controller.StopCoroutine(nameof(controller.DoAnimation));
+                controller.SetTargetSide(PathLightController.Side.NONE);
+                controller.State = 0;
+            }
         }
 
         private void GeneratePath(params Room[] rooms)
@@ -196,6 +214,14 @@ namespace Mistaken.CustomStructures
                         childRooms.Add(room, room.Neighbors);
                     }
                 }
+            }
+
+            foreach (var controller in GameObject.FindObjectsOfType<PathLightController>())
+            {
+                controller.StopCoroutine(nameof(controller.DoAnimation));
+                controller.State = 0;
+                if (controller.TargetSide != PathLightController.Side.NONE)
+                    controller.StartCoroutine(controller.DoAnimation());
             }
         }
     }
