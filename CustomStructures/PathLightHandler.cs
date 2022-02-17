@@ -8,6 +8,7 @@ using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Interfaces;
+using MEC;
 using Mirror;
 using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs.PathLights;
@@ -142,7 +143,8 @@ namespace Mistaken.CustomStructures
         {
             foreach (var controller in GameObject.FindObjectsOfType<PathLightController>())
             {
-                controller.StopCoroutine(nameof(controller.DoAnimation));
+                RunningControllers.Remove(controller);
+                controller.StopAllCoroutines();
                 controller.SetTargetSide(PathLightController.Side.NONE);
                 controller.State = 0;
             }
@@ -191,24 +193,29 @@ namespace Mistaken.CustomStructures
                         var lights = room.ExiledRoom.gameObject.GetComponentInChildren<PathLightController>();
                         if (lights != null)
                         {
-                            var myX = room.ExiledRoom.Position.x;
-                            myX -= myX % 5;
-                            var myZ = room.ExiledRoom.Position.z;
-                            myZ -= myZ % 5;
+                            if (room.ExiledRoom.Type == RoomType.HczChkpA || room.ExiledRoom.Type == RoomType.HczChkpB)
+                                lights.SetTargetSide(PathLightController.Side.SPECIAL);
+                            else
+                            {
+                                var myX = room.ExiledRoom.Position.x;
+                                myX -= myX % 5;
+                                var myZ = room.ExiledRoom.Position.z;
+                                myZ -= myZ % 5;
 
-                            var hisX = parent.ExiledRoom.Position.x;
-                            hisX -= hisX % 5;
-                            var hisZ = parent.ExiledRoom.Position.z;
-                            hisZ -= hisZ % 5;
+                                var hisX = parent.ExiledRoom.Position.x;
+                                hisX -= hisX % 5;
+                                var hisZ = parent.ExiledRoom.Position.z;
+                                hisZ -= hisZ % 5;
 
-                            if (myX > hisX)
-                                lights.SetTargetSide(PathLightController.Side.MINUS_X);
-                            else if (myX < hisX)
-                                lights.SetTargetSide(PathLightController.Side.PLUS_X);
-                            else if (myZ > hisZ)
-                                lights.SetTargetSide(PathLightController.Side.MINUS_Z);
-                            else if (myZ < hisZ)
-                                lights.SetTargetSide(PathLightController.Side.PLUS_Z);
+                                if (myX > hisX)
+                                    lights.SetTargetSide(PathLightController.Side.MINUS_X);
+                                else if (myX < hisX)
+                                    lights.SetTargetSide(PathLightController.Side.PLUS_X);
+                                else if (myZ > hisZ)
+                                    lights.SetTargetSide(PathLightController.Side.MINUS_Z);
+                                else if (myZ < hisZ)
+                                    lights.SetTargetSide(PathLightController.Side.PLUS_Z);
+                            }
                         }
 
                         childRooms.Add(room, room.Neighbors);
@@ -216,13 +223,33 @@ namespace Mistaken.CustomStructures
                 }
             }
 
-            foreach (var controller in GameObject.FindObjectsOfType<PathLightController>())
+            var controllers = GameObject.FindObjectsOfType<PathLightController>();
+
+            foreach (var controller in controllers)
+                RunningControllers.Remove(controller);
+
+            MEC.Timing.CallDelayed(2.1f, () =>
             {
-                controller.StopCoroutine(nameof(controller.DoAnimation));
-                controller.State = 0;
-                if (controller.TargetSide != PathLightController.Side.NONE)
-                    controller.StartCoroutine(controller.DoAnimation());
-            }
+                foreach (var controller in controllers)
+                {
+                    controller.State = 0;
+                    if (controller.TargetSide != PathLightController.Side.NONE)
+                    {
+                        RunningControllers.Add(controller);
+                        Timing.RunCoroutine(DoAnimation(controller));
+                    }
+                }
+            });
         }
+
+        private IEnumerator<float> DoAnimation(PathLightController me)
+        {
+            yield return Timing.WaitForSeconds(1f);
+
+            while (RunningControllers.Contains(me))
+                yield return Timing.WaitForSeconds(me.DoAnimationSingleCycle());
+        }
+
+        private readonly HashSet<PathLightController> RunningControllers = new HashSet<PathLightController>();
     }
 }
