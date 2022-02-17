@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Features;
@@ -12,6 +13,7 @@ using Exiled.API.Features.Items;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Pickups;
 using MEC;
+using Mistaken.API.Extensions;
 using Mistaken.UnityPrefabs;
 using UnityEngine;
 
@@ -72,6 +74,112 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         private bool isOnTop = false;
         private bool isMoving = false;
+
+        private void Start()
+        {
+            this.StartCoroutine(this.HandleKiller());
+        }
+
+        private IEnumerator HandleKiller()
+        {
+            Dictionary<Player, int> counter = new Dictionary<Player, int>();
+            Dictionary<Player, List<Type>> enabledEffects = new Dictionary<Player, List<Type>>();
+            Vector3 center = new Vector3(-21.75f, 1020.75f, -43.5f);
+            Vector3 size = new Vector3(5.5f, 2.5f, 5.5f);
+
+            int pointsPerSecond = 2;
+
+            while (true)
+            {
+                yield return new WaitForSeconds(1);
+                var inRange = Physics.OverlapBox(center, size, Quaternion.identity);
+
+                foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
+                {
+                    var player = Player.Get(item);
+                    if (player is null || player.IsDead || player.IsGodModeEnabled)
+                        continue;
+                    if (!counter.ContainsKey(player))
+                        counter.Add(player, pointsPerSecond + 1);
+                    else
+                        counter[player] += pointsPerSecond + 1;
+
+                    if (!enabledEffects.ContainsKey(player))
+                        enabledEffects.Add(player, new List<Type>());
+                }
+
+                foreach (var item in counter.Where(x => x.Value > 0).ToArray())
+                {
+                    var player = item.Key;
+                    var counterValue = --counter[player];
+                    if (player.IsDead)
+                        counterValue = counter[player] = 0;
+                    player.SetGUI("Test", API.GUI.PseudoGUIPosition.TOP, "Points: " + counterValue);
+
+                    switch (counterValue)
+                    {
+                        case int x when x > 3 * 60 * pointsPerSecond:
+                            if (!player.GetEffectActive<CustomPlayerEffects.Bleeding>())
+                            {
+                                player.EnableEffect<CustomPlayerEffects.Bleeding>();
+                                enabledEffects[player].Add(typeof(CustomPlayerEffects.Bleeding));
+                            }
+
+                            if (!player.GetEffectActive<CustomPlayerEffects.Blinded>())
+                            {
+                                player.EnableEffect<CustomPlayerEffects.Blinded>();
+                                enabledEffects[player].Add(typeof(CustomPlayerEffects.Blinded));
+                            }
+
+                            if (!player.GetEffectActive<CustomPlayerEffects.Burned>())
+                            {
+                                player.EnableEffect<CustomPlayerEffects.Burned>();
+                                enabledEffects[player].Add(typeof(CustomPlayerEffects.Burned));
+                            }
+
+                            if (!player.GetEffectActive<CustomPlayerEffects.Asphyxiated>())
+                            {
+                                player.EnableEffect<CustomPlayerEffects.Asphyxiated>();
+                                enabledEffects[player].Add(typeof(CustomPlayerEffects.Asphyxiated));
+                            }
+
+                            break;
+
+                        case int x when x > 2 * 60 * pointsPerSecond:
+                            if (!player.GetEffectActive<CustomPlayerEffects.Concussed>())
+                            {
+                                player.EnableEffect<CustomPlayerEffects.Concussed>();
+                                enabledEffects[player].Add(typeof(CustomPlayerEffects.Concussed));
+                            }
+
+                            if (!player.GetEffectActive<CustomPlayerEffects.Disabled>())
+                            {
+                                player.EnableEffect<CustomPlayerEffects.Disabled>();
+                                enabledEffects[player].Add(typeof(CustomPlayerEffects.Disabled));
+                            }
+
+                            if (!player.GetEffectActive<CustomPlayerEffects.Deafened>())
+                            {
+                                player.EnableEffect<CustomPlayerEffects.Deafened>();
+                                enabledEffects[player].Add(typeof(CustomPlayerEffects.Deafened));
+                            }
+
+                            break;
+
+                        default:
+                            foreach (var effectType in enabledEffects[player])
+                            {
+                                var effect = player.ActiveEffects.FirstOrDefault(x => x.GetType() == effectType);
+                                if (!(effect is null))
+                                    effect.Intensity = 0;
+                            }
+
+                            enabledEffects[player].Clear();
+                            break;
+                    }
+                }
+            }
+        }
 
         private IEnumerator<float> MoveUp()
         {
