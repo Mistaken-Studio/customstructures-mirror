@@ -48,6 +48,7 @@ namespace Mistaken.CustomStructures
             Exiled.Events.Handlers.Warhead.Detonated += this.Warhead_Detonated;
         }
 
+        private readonly HashSet<PathLightController> runningControllers = new HashSet<PathLightController>();
         private bool enabled = false;
         private bool lockPath_Decontamination = false;
         private bool lockPath_Warhead = false;
@@ -132,18 +133,11 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        [System.Obsolete]
-        private void IniPath()
-        {
-            foreach (var item in GameObject.FindObjectsOfType<PathLightController>().Where(x => !(x.GetComponentInParent<Room>() is null)))
-                item.StartCoroutine(item.DoAnimation());
-        }
-
         private void ClearPath()
         {
+            this.runningControllers.Clear();
             foreach (var controller in GameObject.FindObjectsOfType<PathLightController>())
             {
-                this.RunningControllers.Remove(controller);
                 controller.StopAllCoroutines();
                 controller.SetTargetSide(PathLightController.Side.NONE);
                 controller.State = 0;
@@ -226,7 +220,7 @@ namespace Mistaken.CustomStructures
             var controllers = GameObject.FindObjectsOfType<PathLightController>();
 
             foreach (var controller in controllers)
-                this.RunningControllers.Remove(controller);
+                this.runningControllers.Remove(controller);
 
             MEC.Timing.CallDelayed(2.1f, () =>
             {
@@ -235,7 +229,7 @@ namespace Mistaken.CustomStructures
                     controller.State = 0;
                     if (controller.TargetSide != PathLightController.Side.NONE)
                     {
-                        this.RunningControllers.Add(controller);
+                        this.runningControllers.Add(controller);
                         Timing.RunCoroutine(this.DoAnimation(controller));
                     }
                 }
@@ -246,10 +240,8 @@ namespace Mistaken.CustomStructures
         {
             yield return Timing.WaitForSeconds(1f);
 
-            while (this.RunningControllers.Contains(me))
+            while (this.runningControllers.Contains(me))
                 yield return Timing.WaitForSeconds(me.DoAnimationSingleCycle());
         }
-
-        private readonly HashSet<PathLightController> RunningControllers = new HashSet<PathLightController>();
     }
 }
