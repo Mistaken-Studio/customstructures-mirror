@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="PathLightHandler.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
@@ -143,7 +143,7 @@ namespace Mistaken.CustomStructures
         {
             foreach (var controller in GameObject.FindObjectsOfType<PathLightController>())
             {
-                RunningControllers.Remove(controller);
+                this.RunningControllers.Remove(controller);
                 controller.StopAllCoroutines();
                 controller.SetTargetSide(PathLightController.Side.NONE);
                 controller.State = 0;
@@ -226,7 +226,7 @@ namespace Mistaken.CustomStructures
             var controllers = GameObject.FindObjectsOfType<PathLightController>();
 
             foreach (var controller in controllers)
-                RunningControllers.Remove(controller);
+                this.RunningControllers.Remove(controller);
 
             MEC.Timing.CallDelayed(2.1f, () =>
             {
@@ -235,8 +235,8 @@ namespace Mistaken.CustomStructures
                     controller.State = 0;
                     if (controller.TargetSide != PathLightController.Side.NONE)
                     {
-                        RunningControllers.Add(controller);
-                        Timing.RunCoroutine(DoAnimation(controller));
+                        this.RunningControllers.Add(controller);
+                        Timing.RunCoroutine(this.DoAnimation(controller));
                     }
                 }
             });
@@ -246,7 +246,7 @@ namespace Mistaken.CustomStructures
         {
             yield return Timing.WaitForSeconds(1f);
 
-            while (RunningControllers.Contains(me))
+            while (this.RunningControllers.Contains(me))
                 yield return Timing.WaitForSeconds(me.DoAnimationSingleCycle());
         }
 
