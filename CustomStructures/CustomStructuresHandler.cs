@@ -234,6 +234,13 @@ namespace Mistaken.CustomStructures
             if (Asset.ConnectedDoorAnimators.TryGetValue(ev.Door.Base, out var animator))
                 animator.Animator.SetBool(animator.Name, animator.Toggle ? !ev.Door.IsOpen : animator.Value);
 
+            if (Asset.ConnectedDoorScriptTriggers.TryGetValue(ev.Door.Base, out var trigger))
+            {
+                foreach (var item in this.AssetHandlers.Values.SelectMany(x => x))
+                    item.OnScriptTrigger(trigger.Name);
+                ev.IsAllowed = false;
+            }
+
             if (Asset.RemovePostUse.Contains(ev.Door.Base))
                 this.CallDelayed(.25f, () => NetworkServer.Destroy(ev.Door.Base.gameObject));
 
@@ -255,6 +262,13 @@ namespace Mistaken.CustomStructures
                 ev.IsAllowed = false;
             }
 
+            if (Asset.ConnectedItemScriptTriggers.TryGetValue(ev.Pickup.Base, out var trigger))
+            {
+                foreach (var item in this.AssetHandlers.Values.SelectMany(x => x))
+                    item.OnScriptTrigger(trigger.Name);
+                ev.IsAllowed = false;
+            }
+
             if (Asset.RemovePostUseItem.Contains(ev.Pickup.Base))
             {
                 this.CallDelayed(.25f, () => ev.Pickup.Destroy());
@@ -267,6 +281,8 @@ namespace Mistaken.CustomStructures
             ReloadAssets();
             this.RunCoroutine(this.LoadAssets());
         }
+
+        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>> AssetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>>();
 
         private IEnumerator<float> LoadAssets()
         {
@@ -309,8 +325,11 @@ namespace Mistaken.CustomStructures
                         {
                             if (assetsHandler.Key == asset.Meta.Type)
                             {
-                                var handler = (AssetHandlers.AssetHandler)Activator.CreateInstance(assetsHandler.Value);
-                                handler.Initialize(instance, asset);
+                                var handler = (AssetHandlers.AssetHandler)instance.AddComponent(assetsHandler.Value);
+                                handler.Initialize(asset);
+                                if (!this.AssetHandlers.ContainsKey(assetsHandler.Key))
+                                    this.AssetHandlers.Add(assetsHandler.Key, new List<AssetHandlers.AssetHandler>());
+                                this.AssetHandlers[assetsHandler.Key].Add(handler);
 
                                 break;
                             }
