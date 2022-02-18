@@ -48,6 +48,7 @@ namespace Mistaken.CustomStructures
 
             CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR] = typeof(AssetHandlers.SurfaceGateATowerElevatorHandler);
             CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.WARHEAD_TIMER] = typeof(AssetHandlers.WarheadTimerHandler);
+            CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.RESPAWN_TIMER] = typeof(AssetHandlers.RespawnTimerHandler);
 
             API.Diagnostics.Module.OnEnable(this);
 

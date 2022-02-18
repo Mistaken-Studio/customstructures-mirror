@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="Asset.cs" />
     <Compile Include="AssetHandlers\AssetHandler.cs" />
+    <Compile Include="AssetHandlers\RespawnTimerHandler.cs" />
     <Compile Include="AssetHandlers\WarheadTimerHandler.cs" />
     <Compile Include="PathLightHandler.cs" />
     <Compile Include="LightSyncronizerScript.cs" />
