@@ -106,7 +106,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.bottomFloor.transform.position + Vector3.up, this.bottomFloor.transform.lossyScale / 2.2f, this.bottomFloor.transform.rotation);
+            var inRange = Physics.OverlapBox(this.bottomFloor.transform.position + Vector3.up, (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2), this.bottomFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
                 this.Move(item.gameObject, this.offset);
@@ -165,7 +165,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.topFloor.transform.position + Vector3.up, this.topFloor.transform.lossyScale / 2.2f, this.topFloor.transform.rotation);
+            var inRange = Physics.OverlapBox(this.topFloor.transform.position + Vector3.up, (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2), this.topFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
                 this.Move(item.gameObject, -this.offset);
