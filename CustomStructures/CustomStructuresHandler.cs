@@ -281,6 +281,11 @@ namespace Mistaken.CustomStructures
 
         private void Server_WaitingForPlayers()
         {
+            Asset.ConnectedDoorAnimators.Clear();
+            Asset.ConnectedDoorScriptTriggers.Clear();
+            Asset.ConnectedItemAnimators.Clear();
+            Asset.ConnectedItemScriptTriggers.Clear();
+
             ReloadAssets();
             this.RunCoroutine(this.LoadAssets());
         }
