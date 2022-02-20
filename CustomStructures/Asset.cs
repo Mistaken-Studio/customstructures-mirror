@@ -111,6 +111,26 @@ namespace Mistaken.CustomStructures
             {
                 if (!transform.gameObject.activeInHierarchy)
                     continue;
+
+                if (transform.TryGetComponent(out UnityPrefabs.Text.TextGenerator textGenerator))
+                {
+                    textGenerator.OnTextChanged += (me) =>
+                    {
+                        foreach (var transform2 in me.GetComponentsInChildren<Transform>())
+                        {
+                            if (!transform2.TryGetComponent<MeshRenderer>(out MeshRenderer renderer2))
+                                continue;
+
+                            this.SpawnedChildren[prefabObject].Add(CreatePrimitive(
+                                transform2,
+                                PrimitiveType.Quad,
+                                renderer2.material.color,
+                                false).gameObject);
+                        }
+                    };
+                    continue;
+                }
+
                 if (transform.TryGetComponent<Light>(out Light light))
                 {
                     var toy = CreateLight(
