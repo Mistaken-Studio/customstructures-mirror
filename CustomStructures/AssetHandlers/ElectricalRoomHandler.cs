@@ -10,6 +10,7 @@ using System.Linq;
 using Exiled.API.Features;
 using InventorySystem.Items.Pickups;
 using MEC;
+using Mistaken.API;
 using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs;
 using Mistaken.UnityPrefabs.Misc;
@@ -52,7 +53,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             if (this.cooldown)
                 return;
 
-            if(this.lever is null)
+            if (this.lever is null)
             {
                 Log.Warn("Lever is null");
                 this.SetLever();
@@ -60,28 +61,41 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
             if (name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER")
             {
-                this.currentState = !this.currentState;
-                this.lever.SetBool("Enabled", this.currentState);
-
-                if (this.currentState)
+                try
                 {
-                    API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.ENABLED;
-                    Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES ENGAGED", false, false, true);
-                }
-                else
-                {
-                    API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.DISABLED;
-                    Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES DISENGAGED", false, false, true);
-                }
+                    this.currentState = !this.currentState;
 
-                this.cooldown = true;
-                this.display.SetTime(300);
-                this.display.OnFinishCounting = () => this.cooldown = false;
+                    this.lever.SetBool("Enabled", this.currentState);
+
+                    if (this.currentState)
+                    {
+                        API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.ENABLED;
+                        Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES ENGAGED", false, false, true);
+                    }
+                    else
+                    {
+                        API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.DISABLED;
+                        Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES DISENGAGED", false, false, true);
+                    }
+
+                    this.cooldown = true;
+                    this.display.SetTime(300);
+                    this.display.OnFinishCounting = () => this.cooldown = false;
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Error(ex);
+                    foreach (var item in RealPlayers.List.Where(x => Vector3.Distance(x.Position, this.transform.position) < 5))
+                    {
+                        item.Broadcast(5, "<color=red>Dzwignia jest zablokowana</color>");
+                    }
+                }
             }
         }
 
         protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.EZ_ELECTRICALROOM;
 
+        private readonly HashSet<TeslaGate> suppresedTeslas = new HashSet<TeslaGate>();
         private Animator lever;
         private TimerSegmentScript display;
         private ItemPickupBase triggerItem;
@@ -106,10 +120,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 yield return new WaitForSeconds(1);
 
                 if (this.suppresedTeslas.Contains(teslaGate))
-                {
-                    Log.Debug("Suppresed");
                     continue;
-                }
 
                 if (API.Utilities.Map.TeslaMode == API.Utilities.TeslaMode.ENABLED)
                 {
@@ -121,14 +132,9 @@ namespace Mistaken.CustomStructures.AssetHandlers
                         this.electricalBox.SetStatus(index + 1, Color.green);
                 }
                 else
-                {
                     this.electricalBox.SetStatus(index + 1, new Color(0, 0, 0, 0));
-                    Log.Debug("Disabled");
-                }
             }
         }
-
-        private readonly HashSet<TeslaGate> suppresedTeslas = new HashSet<TeslaGate>();
 
         private void Player_TriggeringTesla(Exiled.Events.EventArgs.TriggeringTeslaEventArgs ev)
         {
@@ -140,11 +146,14 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.electricalBox.SetStatus(index + 1, Color.red);
             this.suppresedTeslas.Add(ev.Tesla);
 
-            Module.CallSafeDelayed(1.5f, () =>
-            {
-                this.electricalBox.SetStatus(index + 1, Color.yellow);
-                this.suppresedTeslas.Remove(ev.Tesla);
-            }, "UnsuppressTesla");
+            Module.CallSafeDelayed(
+                1.5f,
+                () =>
+                {
+                    this.electricalBox.SetStatus(index + 1, Color.yellow);
+                    this.suppresedTeslas.Remove(ev.Tesla);
+                },
+                "UnsuppressTesla");
         }
 
         private void Scp079_InteractingTesla(Exiled.Events.EventArgs.InteractingTeslaEventArgs ev)
@@ -157,11 +166,14 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.electricalBox.SetStatus(index + 1, Color.red);
             this.suppresedTeslas.Add(ev.Tesla);
 
-            Module.CallSafeDelayed(.75f, () =>
-            {
-                this.electricalBox.SetStatus(index + 1, Color.yellow);
-                this.suppresedTeslas.Remove(ev.Tesla);
-            }, "UnsuppressTesla");
+            Module.CallSafeDelayed(
+                .75f,
+                () =>
+                {
+                    this.electricalBox.SetStatus(index + 1, Color.yellow);
+                    this.suppresedTeslas.Remove(ev.Tesla);
+                },
+                "UnsuppressTesla");
         }
     }
 }
