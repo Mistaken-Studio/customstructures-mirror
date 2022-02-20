@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Features;
 using InventorySystem.Items.Pickups;
+using MEC;
 using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs;
 using Mistaken.UnityPrefabs.Misc;
