@@ -261,15 +261,15 @@ namespace Mistaken.CustomStructures
 
             if (Asset.ConnectedItemAnimators.TryGetValue(ev.Pickup.Base, out var animator))
             {
-                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.Name) : animator.Value);
                 ev.IsAllowed = false;
+                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.Name) : animator.Value);
             }
 
             if (Asset.ConnectedItemScriptTriggers.TryGetValue(ev.Pickup.Base, out var trigger))
             {
+                ev.IsAllowed = false;
                 foreach (var item in this.assetHandlers.Values.SelectMany(x => x))
                     item.OnScriptTrigger(trigger.Name);
-                ev.IsAllowed = false;
             }
 
             if (Asset.RemovePostUseItem.Contains(ev.Pickup.Base))

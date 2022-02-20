@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System.Linq;
+using Exiled.API.Features;
 using InventorySystem.Items.Pickups;
 using MEC;
 using Mistaken.UnityPrefabs;
@@ -24,6 +25,9 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 this.Invoke(nameof(this.SetLever), 5);
 
             this.triggerItem = Asset.ConnectedItemScriptTriggers.Single(x => x.Value.Name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER").Key;
+
+            Map.Rooms.First(x => x.Type == Exiled.API.Enums.RoomType.EzCollapsedTunnel)
+                .Color = Color.white;
         }
 
         public override void OnDestroy()
