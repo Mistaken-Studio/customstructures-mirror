@@ -41,15 +41,22 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 .Color = Color.white;
 
             Exiled.Events.Handlers.Player.TriggeringTesla += this.Player_TriggeringTesla;
+            Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
             Exiled.Events.Handlers.Scp079.InteractingTesla += this.Scp079_InteractingTesla;
         }
 
         public override void OnDestroy()
         {
+            Exiled.Events.Handlers.Player.TriggeringTesla -= this.Player_TriggeringTesla;
+            Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
+            Exiled.Events.Handlers.Scp079.InteractingTesla -= this.Scp079_InteractingTesla;
         }
 
         public override void OnScriptTrigger(string name)
         {
+            if (Round.ElapsedTime.TotalSeconds < 10)
+                return;
+
             if (this.cooldown)
                 return;
 
@@ -110,6 +117,18 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.lever = this.gameObject.GetComponentInChildren<Animator>();
             this.display = this.gameObject.GetComponentInChildren<TimerSegmentScript>();
             this.display?.SetText("----");
+        }
+
+        private void Server_RoundStarted()
+        {
+            MEC.Timing.CallDelayed(3, () =>
+            {
+                foreach (var player in RealPlayers.Get(RoleType.FacilityGuard))
+                {
+                    if (player.CurrentRoom?.Type == Exiled.API.Enums.RoomType.EzCollapsedTunnel)
+                        player.Position = Map.Rooms.First(x => x.Type == Exiled.API.Enums.RoomType.EzCafeteria).Position + Vector3.up;
+                }
+            });
         }
 
         private IEnumerator UpdateLight(TeslaGate teslaGate)
