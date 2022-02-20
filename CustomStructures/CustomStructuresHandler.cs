@@ -14,6 +14,7 @@ using Exiled.API.Interfaces;
 using MEC;
 using Mirror;
 using Mistaken.API.Diagnostics;
+using Mistaken.CustomStructures.AssetHandlers;
 using Mistaken.UnityPrefabs;
 using UnityEngine;
 
@@ -197,7 +198,7 @@ namespace Mistaken.CustomStructures
         private static IEnumerable<AssetBundle> LoadBoundles(string files)
         {
             List<AssetBundle> tor = new List<AssetBundle>();
-            foreach (var item in Directory.GetFiles(files))
+            foreach (var item in Directory.GetFiles(files).Where(x => !x.EndsWith(".manifest")))
                 tor.Add(AssetBundle.LoadFromFile(item));
 
             foreach (var item in Directory.GetDirectories(files))
@@ -226,6 +227,8 @@ namespace Mistaken.CustomStructures
             return assets;
         }
 
+        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>> assetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>>();
+
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {
             if (!ev.IsAllowed)
@@ -236,7 +239,7 @@ namespace Mistaken.CustomStructures
 
             if (Asset.ConnectedDoorScriptTriggers.TryGetValue(ev.Door.Base, out var trigger))
             {
-                foreach (var item in this.AssetHandlers.Values.SelectMany(x => x))
+                foreach (var item in this.assetHandlers.Values.SelectMany(x => x))
                     item.OnScriptTrigger(trigger.Name);
                 ev.IsAllowed = false;
             }
@@ -258,15 +261,15 @@ namespace Mistaken.CustomStructures
 
             if (Asset.ConnectedItemAnimators.TryGetValue(ev.Pickup.Base, out var animator))
             {
-                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.Name) : animator.Value);
                 ev.IsAllowed = false;
+                animator.Animator.SetBool(animator.Name, animator.Toggle ? !animator.Animator.GetBool(animator.Name) : animator.Value);
             }
 
             if (Asset.ConnectedItemScriptTriggers.TryGetValue(ev.Pickup.Base, out var trigger))
             {
-                foreach (var item in this.AssetHandlers.Values.SelectMany(x => x))
-                    item.OnScriptTrigger(trigger.Name);
                 ev.IsAllowed = false;
+                foreach (var item in this.assetHandlers.Values.SelectMany(x => x))
+                    item.OnScriptTrigger(trigger.Name);
             }
 
             if (Asset.RemovePostUseItem.Contains(ev.Pickup.Base))
@@ -286,8 +289,6 @@ namespace Mistaken.CustomStructures
             ReloadAssets();
             this.RunCoroutine(this.LoadAssets());
         }
-
-        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>> AssetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>>();
 
         private IEnumerator<float> LoadAssets()
         {
@@ -331,11 +332,15 @@ namespace Mistaken.CustomStructures
                             if (assetsHandler.Key == asset.Meta.Type)
                             {
                                 var handler = (AssetHandlers.AssetHandler)instance.AddComponent(assetsHandler.Value);
-                                handler.Initialize(asset);
-                                if (!this.AssetHandlers.ContainsKey(assetsHandler.Key))
-                                    this.AssetHandlers.Add(assetsHandler.Key, new List<AssetHandlers.AssetHandler>());
-                                this.AssetHandlers[assetsHandler.Key].Add(handler);
 
+                                this.CallDelayed(10, () =>
+                                {
+                                    handler.Initialize(asset);
+                                });
+
+                                if (!this.assetHandlers.ContainsKey(assetsHandler.Key))
+                                    this.assetHandlers.Add(assetsHandler.Key, new List<AssetHandlers.AssetHandler>());
+                                this.assetHandlers[assetsHandler.Key].Add(handler);
                                 break;
                             }
                         }
