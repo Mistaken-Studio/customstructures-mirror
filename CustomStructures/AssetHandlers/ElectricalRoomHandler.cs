@@ -43,6 +43,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             Exiled.Events.Handlers.Player.TriggeringTesla += this.Player_TriggeringTesla;
             Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
             Exiled.Events.Handlers.Scp079.InteractingTesla += this.Scp079_InteractingTesla;
+            Exiled.Events.Handlers.Player.ChangingRole += this.Player_ChangingRole;
         }
 
         public override void OnDestroy()
@@ -50,6 +51,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             Exiled.Events.Handlers.Player.TriggeringTesla -= this.Player_TriggeringTesla;
             Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
             Exiled.Events.Handlers.Scp079.InteractingTesla -= this.Scp079_InteractingTesla;
+            Exiled.Events.Handlers.Player.ChangingRole -= this.Player_ChangingRole;
         }
 
         public override void OnScriptTrigger(string name)
@@ -191,6 +193,20 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 {
                     this.electricalBox.SetStatus(index + 1, Color.yellow);
                     this.suppresedTeslas.Remove(ev.Tesla);
+                },
+                "UnsuppressTesla");
+        }
+
+        private void Player_ChangingRole(Exiled.Events.EventArgs.ChangingRoleEventArgs ev)
+        {
+            if (ev.NewRole != RoleType.FacilityGuard || !ev.IsAllowed)
+                return;
+            Module.CallSafeDelayed(
+                1.5f,
+                () =>
+                {
+                    if (ev.Player.CurrentRoom?.Type == Exiled.API.Enums.RoomType.EzCollapsedTunnel)
+                        ev.Player.Position = Map.Rooms.First(x => x.Type == Exiled.API.Enums.RoomType.EzCafeteria).Position + Vector3.up;
                 },
                 "UnsuppressTesla");
         }
