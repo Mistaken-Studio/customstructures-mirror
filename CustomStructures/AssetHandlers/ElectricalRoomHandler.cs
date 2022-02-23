@@ -52,6 +52,9 @@ namespace Mistaken.CustomStructures.AssetHandlers
             Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
             Exiled.Events.Handlers.Scp079.InteractingTesla -= this.Scp079_InteractingTesla;
             Exiled.Events.Handlers.Player.ChangingRole -= this.Player_ChangingRole;
+
+            this.cooldown = true;
+            this.display.OnFinishCounting = null;
         }
 
         public override void OnScriptTrigger(string name)
