@@ -1,4 +1,4 @@
 include:
   - project: 'scp-sl/ci'
-    ref: master
+    ref: testing
     file: 'entry.gitlab-ci.yml'
