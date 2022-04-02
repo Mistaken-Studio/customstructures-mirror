@@ -234,7 +234,7 @@ namespace Mistaken.CustomStructures
                             case ItemType.Ammo762x39:
                             case ItemType.Ammo9x19:
                                 {
-                                    var item = new Ammo(itemType);
+                                    var item = Exiled.API.Features.Items.Item.Create(itemType);
                                     item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     (spawned as AmmoPickup).NetworkSavedAmmo = itemScript.Ammo;
@@ -251,7 +251,7 @@ namespace Mistaken.CustomStructures
                             case ItemType.GunAK:
                             case ItemType.GunShotgun:
                                 {
-                                    var item = new Exiled.API.Features.Items.Firearm(itemType);
+                                    var item = Exiled.API.Features.Items.Item.Create(itemType);
                                     item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     spawned.Rb.useGravity = false;
@@ -261,7 +261,7 @@ namespace Mistaken.CustomStructures
 
                             default:
                                 {
-                                    var item = new Exiled.API.Features.Items.Item(itemType);
+                                    var item = Exiled.API.Features.Items.Item.Create(itemType);
                                     item.Scale = tor.transform.lossyScale;
                                     spawned = item.Spawn(tor.transform.position, tor.transform.rotation).Base;
                                     spawned.Rb.useGravity = false;

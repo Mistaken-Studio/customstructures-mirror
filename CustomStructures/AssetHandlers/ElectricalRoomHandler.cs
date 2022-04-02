@@ -37,7 +37,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             foreach (var tesla in this.teslas)
                 this.StartCoroutine(this.UpdateLight(tesla));
 
-            Map.Rooms.First(x => x.Type == Exiled.API.Enums.RoomType.EzCollapsedTunnel)
+            Room.List.First(x => x.Type == Exiled.API.Enums.RoomType.EzCollapsedTunnel)
                 .Color = Color.white;
 
             Exiled.Events.Handlers.Player.TriggeringTesla += this.Player_TriggeringTesla;
@@ -131,7 +131,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 foreach (var player in RealPlayers.Get(RoleType.FacilityGuard))
                 {
                     if (player.CurrentRoom?.Type == Exiled.API.Enums.RoomType.EzCollapsedTunnel)
-                        player.Position = Map.Rooms.First(x => x.Type == Exiled.API.Enums.RoomType.EzCafeteria).Position + Vector3.up;
+                        player.Position = Room.List.First(x => x.Type == Exiled.API.Enums.RoomType.EzCafeteria).Position + Vector3.up;
                 }
             });
         }
@@ -165,17 +165,17 @@ namespace Mistaken.CustomStructures.AssetHandlers
             if (!ev.IsTriggerable || API.Utilities.Map.TeslaMode != API.Utilities.TeslaMode.ENABLED)
                 return;
 
-            int index = this.teslas.IndexOf(ev.Tesla);
+            int index = this.teslas.IndexOf(ev.Tesla.Base);
 
             this.electricalBox.SetStatus(index + 1, Color.red);
-            this.suppresedTeslas.Add(ev.Tesla);
+            this.suppresedTeslas.Add(ev.Tesla.Base);
 
             Module.CallSafeDelayed(
                 1.5f,
                 () =>
                 {
                     this.electricalBox.SetStatus(index + 1, Color.yellow);
-                    this.suppresedTeslas.Remove(ev.Tesla);
+                    this.suppresedTeslas.Remove(ev.Tesla.Base);
                 },
                 "UnsuppressTesla");
         }
@@ -185,17 +185,17 @@ namespace Mistaken.CustomStructures.AssetHandlers
             if (!ev.IsAllowed || API.Utilities.Map.TeslaMode != API.Utilities.TeslaMode.ENABLED)
                 return;
 
-            int index = this.teslas.IndexOf(ev.Tesla);
+            int index = this.teslas.IndexOf(ev.Tesla.Base);
 
             this.electricalBox.SetStatus(index + 1, Color.red);
-            this.suppresedTeslas.Add(ev.Tesla);
+            this.suppresedTeslas.Add(ev.Tesla.Base);
 
             Module.CallSafeDelayed(
                 .75f,
                 () =>
                 {
                     this.electricalBox.SetStatus(index + 1, Color.yellow);
-                    this.suppresedTeslas.Remove(ev.Tesla);
+                    this.suppresedTeslas.Remove(ev.Tesla.Base);
                 },
                 "UnsuppressTesla");
         }
@@ -209,7 +209,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 () =>
                 {
                     if (ev.Player.CurrentRoom?.Type == Exiled.API.Enums.RoomType.EzCollapsedTunnel)
-                        ev.Player.Position = Map.Rooms.First(x => x.Type == Exiled.API.Enums.RoomType.EzCafeteria).Position + Vector3.up;
+                        ev.Player.Position = Room.List.First(x => x.Type == Exiled.API.Enums.RoomType.EzCafeteria).Position + Vector3.up;
                 },
                 "UnsuppressTesla");
         }
