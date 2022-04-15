@@ -29,17 +29,19 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.bottomFloor = this.bottom.transform.Find("Floor");
             if (this.bottomFloor == null)
                 throw new ArgumentNullException("bottomFloor");
+
             this.topFloor = this.top.transform.Find("Floor");
             if (this.topFloor == null)
                 throw new ArgumentNullException("topFloor");
+
             this.offset = this.topFloor.transform.position - this.bottomFloor.transform.position;
 
-            this.bottomDoor = asset.Doors[this.bottom.Find("Entrance").Find("LCZ_DOOR").gameObject];
+            this.bottomDoor = asset.Doors[this.bottom.Find("Entrance").Find("HCZ_DOOR").gameObject];
 
             if (this.bottomDoor == null)
                 throw new ArgumentNullException("this.BottomDoor");
 
-            this.topDoor = asset.Doors[this.top.Find("Entrance").Find("LCZ_DOOR").gameObject];
+            this.topDoor = asset.Doors[this.top.Find("Entrance").Find("HCZ_DOOR").gameObject];
 
             if (this.topDoor == null)
                 throw new ArgumentNullException("this.TopDoor");
