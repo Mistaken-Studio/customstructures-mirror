@@ -76,7 +76,7 @@ namespace Mistaken.CustomStructures
             if (!this.enabled)
                 return;
             this.lockPath_Warhead = true;
-            this.GeneratePath(Map.Rooms.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
+            this.GeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
         }
 
         private void Map_AnnouncingDecontamination(Exiled.Events.EventArgs.AnnouncingDecontaminationEventArgs ev)
@@ -87,7 +87,7 @@ namespace Mistaken.CustomStructures
             {
                 this.lockPath_Decontamination = true;
                 if (!this.lockPath_Warhead)
-                    this.GeneratePath(Map.Rooms.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
+                    this.GeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
             }
             else if (ev.Id == 6)
             {
