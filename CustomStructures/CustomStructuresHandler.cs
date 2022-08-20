@@ -159,7 +159,6 @@ namespace Mistaken.CustomStructures
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
             Mistaken.Events.Handlers.CustomEvents.RequestPickItem += this.CustomEvents_RequestPickItem;
-            Mistaken.Events.Handlers.CustomEvents.GeneratedCache += this.CustomEvents_GeneratedCache;
 
             ReloadAssets();
         }
@@ -170,7 +169,6 @@ namespace Mistaken.CustomStructures
             Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
             Mistaken.Events.Handlers.CustomEvents.RequestPickItem -= this.CustomEvents_RequestPickItem;
-            Mistaken.Events.Handlers.CustomEvents.GeneratedCache -= this.CustomEvents_GeneratedCache;
 
             foreach (var asset in Assets)
             {
@@ -231,12 +229,6 @@ namespace Mistaken.CustomStructures
 
         private readonly Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>> assetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>>();
 
-        private void CustomEvents_GeneratedCache()
-        {
-            ReloadAssets();
-            this.RunCoroutine(this.LoadAssets());
-        }
-
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {
             if (!ev.IsAllowed)
@@ -293,6 +285,9 @@ namespace Mistaken.CustomStructures
             Asset.ConnectedDoorScriptTriggers.Clear();
             Asset.ConnectedItemAnimators.Clear();
             Asset.ConnectedItemScriptTriggers.Clear();
+
+            ReloadAssets();
+            this.RunCoroutine(this.LoadAssets());
         }
 
         private IEnumerator<float> LoadAssets()
