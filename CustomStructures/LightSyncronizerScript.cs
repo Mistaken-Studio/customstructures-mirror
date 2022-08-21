@@ -6,7 +6,6 @@
 
 using AdminToys;
 using Exiled.API.Features;
-using Mirror;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures
@@ -27,14 +26,8 @@ namespace Mistaken.CustomStructures
             if (this.Toy == null)
                 return;
 
-            if (this.Toy.enabled != this.light.enabled)
-            {
-                this.Toy.enabled = this.light.enabled;
-                if (this.light.enabled)
-                    NetworkServer.Spawn(this.Toy.gameObject);
-                else
-                    NetworkServer.UnSpawn(this.Toy.gameObject);
-            }
+            if (!this.light.enabled && this.light.intensity != 0)
+                Log.Warn($"Do not disable light, Set intensity to 0 instead ({this.transform.position})");
 
             if (this.Toy.NetworkLightColor != this.light.color)
                 this.Toy.NetworkLightColor = this.light.color;
