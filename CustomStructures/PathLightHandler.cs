@@ -53,6 +53,9 @@ namespace Mistaken.CustomStructures
         private bool lockPath_Decontamination = false;
         private bool lockPath_Warhead = false;
 
+        private Dictionary<PathLightController, PathLightController.Side> nukePath = null;
+        private Dictionary<PathLightController, PathLightController.Side> decontaminationPath = null;
+
         private void Warhead_Detonated()
         {
             if (!this.enabled)
@@ -76,7 +79,7 @@ namespace Mistaken.CustomStructures
             if (!this.enabled)
                 return;
             this.lockPath_Warhead = true;
-            this.GeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
+            this.EnablePath(this.nukePath);
         }
 
         private void Map_AnnouncingDecontamination(Exiled.Events.EventArgs.AnnouncingDecontaminationEventArgs ev)
@@ -87,7 +90,7 @@ namespace Mistaken.CustomStructures
             {
                 this.lockPath_Decontamination = true;
                 if (!this.lockPath_Warhead)
-                    this.GeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
+                    this.EnablePath(this.decontaminationPath);
             }
             else if (ev.Id == 6)
             {
@@ -109,10 +112,10 @@ namespace Mistaken.CustomStructures
                 return;
             }
 
-            // this.GeneratePath(Map.Rooms.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
             this.ClearPath();
 
-            // this.IniPath();
+            this.decontaminationPath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
+            this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
         }
 
         private void RemovePathLightsFrom(params ZoneType[] zones)
@@ -144,8 +147,10 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        private void GeneratePath(params Room[] rooms)
+        private Dictionary<PathLightController, PathLightController.Side> PreGeneratePath(params Room[] rooms)
         {
+            var tor = new Dictionary<PathLightController, PathLightController.Side>();
+
             HashSet<API.Utilities.Room> checkedRooms = new HashSet<API.Utilities.Room>();
 
             Dictionary<API.Utilities.Room, Dictionary<API.Utilities.Room, API.Utilities.Room[]>> checkRooms = new Dictionary<API.Utilities.Room, Dictionary<API.Utilities.Room, API.Utilities.Room[]>>();
@@ -162,7 +167,7 @@ namespace Mistaken.CustomStructures
                 var lights = item.gameObject.GetComponentInChildren<PathLightController>();
                 if (lights != null)
                 {
-                    lights.SetTargetSide(PathLightController.Side.SPECIAL);
+                    tor[lights] = PathLightController.Side.SPECIAL;
                 }
             }
 
@@ -188,7 +193,7 @@ namespace Mistaken.CustomStructures
                         if (lights != null)
                         {
                             if (room.ExiledRoom.Type == RoomType.HczChkpA || room.ExiledRoom.Type == RoomType.HczChkpB)
-                                lights.SetTargetSide(PathLightController.Side.SPECIAL);
+                                tor[lights] = PathLightController.Side.SPECIAL;
                             else
                             {
                                 var myX = room.ExiledRoom.Position.x;
@@ -202,13 +207,13 @@ namespace Mistaken.CustomStructures
                                 hisZ -= hisZ % 5;
 
                                 if (myX > hisX)
-                                    lights.SetTargetSide(PathLightController.Side.MINUS_X);
+                                    tor[lights] = PathLightController.Side.MINUS_X;
                                 else if (myX < hisX)
-                                    lights.SetTargetSide(PathLightController.Side.PLUS_X);
+                                    tor[lights] = PathLightController.Side.PLUS_X;
                                 else if (myZ > hisZ)
-                                    lights.SetTargetSide(PathLightController.Side.MINUS_Z);
+                                    tor[lights] = PathLightController.Side.MINUS_Z;
                                 else if (myZ < hisZ)
-                                    lights.SetTargetSide(PathLightController.Side.PLUS_Z);
+                                    tor[lights] = PathLightController.Side.PLUS_Z;
                             }
                         }
 
@@ -217,6 +222,11 @@ namespace Mistaken.CustomStructures
                 }
             }
 
+            return tor;
+        }
+
+        private void EnablePath(Dictionary<PathLightController, PathLightController.Side> path)
+        {
             var controllers = GameObject.FindObjectsOfType<PathLightController>();
 
             foreach (var controller in controllers)
@@ -224,9 +234,11 @@ namespace Mistaken.CustomStructures
 
             MEC.Timing.CallDelayed(2.1f, () =>
             {
-                foreach (var controller in controllers)
+                foreach (var data in path)
                 {
+                    var controller = data.Key;
                     controller.State = 0;
+                    controller.SetTargetSide(data.Value);
                     if (controller.TargetSide != PathLightController.Side.NONE)
                     {
                         this.runningControllers.Add(controller);
