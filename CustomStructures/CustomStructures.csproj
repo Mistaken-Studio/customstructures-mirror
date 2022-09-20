@@ -67,6 +67,10 @@
     <Compile Include="AssetHandlers\RespawnTimerHandler.cs" />
     <Compile Include="AssetHandlers\WarheadTimerHandler.cs" />
     <Compile Include="ColorSynchronizerScript.cs" />
+    <Compile Include="Optimization\LightSynchronizerScript.cs" />
+    <Compile Include="Optimization\PrimitiveSynchronizerScript.cs" />
+    <Compile Include="Optimization\RoomSynchronizerScript.cs" />
+    <Compile Include="Optimization\SynchronizerScript.cs" />
     <Compile Include="Pathlights\PathLightHandler.cs" />
     <Compile Include="LightSynchronizerScript.cs" />
     <Compile Include="DestructionInformerScript.cs" />
