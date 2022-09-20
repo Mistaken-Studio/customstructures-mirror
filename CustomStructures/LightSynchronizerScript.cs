@@ -1,5 +1,5 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="LightSyncronizerScript.cs" company="Mistaken">
+// <copyright file="LightSynchronizerScript.cs" company="Mistaken">
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Mistaken.CustomStructures
 {
-    internal class LightSyncronizerScript : MonoBehaviour
+    internal class LightSynchronizerScript : MonoBehaviour
     {
         internal LightSourceToy Toy { get; set; }
 

@@ -139,7 +139,7 @@ namespace Mistaken.CustomStructures
                         light.intensity,
                         light.range,
                         light.shadows != LightShadows.None);
-                    transform.gameObject.AddComponent<LightSyncronizerScript>().Toy = toy;
+                    transform.gameObject.AddComponent<LightSynchronizerScript>().Toy = toy;
                     this.SpawnedChildren[prefabObject].Add(toy.gameObject);
                 }
 

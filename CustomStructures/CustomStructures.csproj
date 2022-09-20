@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -67,13 +67,15 @@
     <Compile Include="AssetHandlers\RespawnTimerHandler.cs" />
     <Compile Include="AssetHandlers\WarheadTimerHandler.cs" />
     <Compile Include="ColorSynchronizerScript.cs" />
-    <Compile Include="PathLightHandler.cs" />
-    <Compile Include="LightSyncronizerScript.cs" />
+    <Compile Include="Pathlights\PathLightHandler.cs" />
+    <Compile Include="LightSynchronizerScript.cs" />
     <Compile Include="DestructionInformerScript.cs" />
     <Compile Include="AssetHandlers\SingleAssetHandler.cs" />
     <Compile Include="AssetHandlers\SurfaceGateATowerElevatorHandler.cs" />
     <Compile Include="LoadCommand.cs" />
     <Compile Include="CustomStructuresHandler.cs" />
+    <Compile Include="Pathlights\PathLightSynchronizerScript.cs" />
+    <Compile Include="Pathlights\RoomPathLightSynchronizerScript.cs" />
     <Compile Include="PluginHandler.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -88,6 +90,7 @@
     <Analyzer Include="..\packages\StyleCop.Analyzers.1.1.118\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
     <Analyzer Include="..\packages\StyleCop.Analyzers.1.1.118\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

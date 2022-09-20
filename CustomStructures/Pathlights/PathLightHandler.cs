@@ -3,12 +3,10 @@
 // Copyright (c) Mistaken. All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
-using System;
+
 using System.Collections.Generic;
 using System.Linq;
-using AdminToys;
 using Exiled.API.Enums;
-using Exiled.API.Extensions;
 using Exiled.API.Features;
 using Exiled.API.Interfaces;
 using MEC;
@@ -18,14 +16,14 @@ using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs.PathLights;
 using UnityEngine;
 
-#pragma warning disable SA1118 // Parameter should not span multiple lines
-
-namespace Mistaken.CustomStructures
+// ReSharper disable SuggestBaseTypeForParameter
+// ReSharper disable once IdentifierTypo
+namespace Mistaken.CustomStructures.Pathlights
 {
     /// <inheritdoc/>
     public class PathLightHandler : Module
     {
-        /// <inheritdoc cref="Module.Module(IPlugin{IConfig})"/>
+        /// <inheritdoc cref="Module"/>
         public PathLightHandler(IPlugin<IConfig> plugin)
             : base(plugin)
         {
@@ -55,18 +53,23 @@ namespace Mistaken.CustomStructures
         }
 
         private readonly HashSet<PathLightController> runningControllers = new HashSet<PathLightController>();
-        private bool enabled = false;
-        private bool lockPath_Decontamination = false;
-        private bool lockPath_Warhead = false;
 
-        private Dictionary<PathLightController, PathLightController.Side> nukePath = null;
-        private Dictionary<PathLightController, PathLightController.Side> decontaminationPath = null;
+        // ReSharper disable once IdentifierTypo
+        private readonly Dictionary<Room, RoomPathLightSynchronizerScript> synchronizers = new Dictionary<Room, RoomPathLightSynchronizerScript>();
+        private readonly Dictionary<Room, PathLightController> controllers = new Dictionary<Room, PathLightController>();
+
+        private bool enabled;
+        private bool lockPathDecontamination;
+        private bool lockPathWarhead;
+
+        private Dictionary<PathLightController, PathLightController.Side> nukePath;
+        private Dictionary<PathLightController, PathLightController.Side> decontaminationPath;
 
         private void Warhead_Detonated()
         {
             if (!this.enabled)
                 return;
-            this.lockPath_Warhead = false;
+            this.lockPathWarhead = false;
             this.RemovePathLightsFrom(ZoneType.LightContainment, ZoneType.HeavyContainment, ZoneType.Entrance);
         }
 
@@ -74,9 +77,9 @@ namespace Mistaken.CustomStructures
         {
             if (!this.enabled)
                 return;
-            this.lockPath_Warhead = false;
+            this.lockPathWarhead = false;
             this.ClearPath();
-            if (this.lockPath_Decontamination)
+            if (this.lockPathDecontamination)
                 this.Map_AnnouncingDecontamination(new Exiled.Events.EventArgs.AnnouncingDecontaminationEventArgs(3, true));
         }
 
@@ -84,7 +87,7 @@ namespace Mistaken.CustomStructures
         {
             if (!this.enabled)
                 return;
-            this.lockPath_Warhead = true;
+            this.lockPathWarhead = true;
             this.EnablePath(this.nukePath);
         }
 
@@ -92,19 +95,22 @@ namespace Mistaken.CustomStructures
         {
             if (!this.enabled)
                 return;
-            if (ev.Id == 3)
-            {
-                this.lockPath_Decontamination = true;
-                if (!this.lockPath_Warhead)
-                    this.EnablePath(this.decontaminationPath);
-            }
-            else if (ev.Id == 6)
-            {
-                if (!this.lockPath_Warhead)
-                    this.ClearPath();
-                this.lockPath_Decontamination = false;
 
-                MEC.Timing.CallDelayed(30, () => this.RemovePathLightsFrom(ZoneType.LightContainment));
+            switch (ev.Id)
+            {
+                case 3:
+                    this.lockPathDecontamination = true;
+                    if (!this.lockPathWarhead)
+                        this.EnablePath(this.decontaminationPath);
+                    break;
+
+                case 6:
+                    if (!this.lockPathWarhead)
+                        this.ClearPath();
+                    this.lockPathDecontamination = false;
+
+                    Timing.CallDelayed(30, () => this.RemovePathLightsFrom(ZoneType.LightContainment));
+                    break;
             }
         }
 
@@ -124,15 +130,15 @@ namespace Mistaken.CustomStructures
             this.decontaminationPath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
             this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
 
-            foreach (var item in this.Controllers)
+            foreach (var item in this.controllers)
             {
-                foreach (var script in item.Value.GetComponentsInChildren<LightSyncronizerScript>().ToArray())
+                foreach (var script in item.Value.GetComponentsInChildren<LightSynchronizerScript>().ToArray())
                 {
-                    script.gameObject.AddComponent<PathLightSyncronizerScript>().Toy = script.Toy;
-                    GameObject.Destroy(script);
+                    script.gameObject.AddComponent<PathLightSynchronizerScript>().Toy = script.Toy;
+                    Object.Destroy(script);
                 }
 
-                this.Syncronizers[item.Key] = item.Key.gameObject.AddComponent<RoomPathLightSyncronizerScript>();
+                this.synchronizers[item.Key] = item.Key.gameObject.AddComponent<RoomPathLightSynchronizerScript>();
             }
 
             this.RunCoroutine(this.SynchronizationHandler(), nameof(this.SynchronizationHandler));
@@ -142,26 +148,33 @@ namespace Mistaken.CustomStructures
 
         private void RemovePathLightsFrom(params ZoneType[] zones)
         {
-            foreach (var item in GameObject.FindObjectsOfType<PathLightController>())
+            foreach (var item in Object.FindObjectsOfType<PathLightController>())
             {
-                var zone = item.GetComponentInParent<Room>()?.Zone;
-                if (zone is null)
+                var room = item.GetComponentInParent<Room>();
+
+                if (room is null)
                     continue;
 
-                if (zones.Any(x => x == zone))
-                {
-                    foreach (var nid in item.GetComponentsInChildren<NetworkIdentity>())
-                        NetworkServer.Destroy(nid.gameObject);
+                var zone = room.Zone;
 
-                    GameObject.Destroy(item.gameObject);
-                }
+                // ReSharper disable once SimplifyLinqExpressionUseAll
+                if (!zones.Any(x => x == zone))
+                    continue;
+
+                foreach (var nid in item.GetComponentsInChildren<NetworkIdentity>())
+                    NetworkServer.Destroy(nid.gameObject);
+
+                this.synchronizers.Remove(room);
+                this.controllers.Remove(room);
+
+                Object.Destroy(item.gameObject);
             }
         }
 
         private void ClearPath()
         {
             this.runningControllers.Clear();
-            foreach (var controller in this.Controllers.Values)
+            foreach (var controller in this.controllers.Values)
             {
                 controller.StopAllCoroutines();
                 controller.SetTargetSide(PathLightController.Side.NONE);
@@ -169,18 +182,16 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        private readonly Dictionary<Room, PathLightController> Controllers = new Dictionary<Room, PathLightController>();
-
         private void PreparePathLightDict()
         {
-            this.Controllers.Clear();
+            this.controllers.Clear();
 
             foreach (var room in Room.List)
             {
                 var controller = room.GetComponentInChildren<PathLightController>();
                 if (controller is null)
                     continue;
-                this.Controllers[room] = controller;
+                this.controllers[room] = controller;
             }
         }
 
@@ -201,7 +212,7 @@ namespace Mistaken.CustomStructures
                     { itemRoom, itemRoom.Neighbors },
                 };
 
-                if (this.Controllers.TryGetValue(item, out var lights))
+                if (this.controllers.TryGetValue(item, out var lights))
                 {
                     tor[lights] = PathLightController.Side.SPECIAL;
                 }
@@ -211,21 +222,20 @@ namespace Mistaken.CustomStructures
             {
                 foreach (var checkRoom in checkRooms)
                 {
-                    var targetRoom = checkRoom.Key;
+                    // var targetRoom = checkRoom.Key;
                     var childRooms = checkRoom.Value;
 
                     var childRoomsCurrent = childRooms.ToArray();
                     childRooms.Clear();
 
-                    foreach (var item in childRoomsCurrent.SelectMany(x => x.Value.Select(value => (x.Key, value))))
+                    foreach (var (parent, room) in childRoomsCurrent.SelectMany(x => x.Value.Select(value => (x.Key, value))))
                     {
-                        var parent = item.Key;
-                        var room = item.value;
                         if (checkedRooms.Contains(room))
                             continue;
+
                         checkedRooms.Add(room);
 
-                        if (this.Controllers.TryGetValue(room.ExiledRoom, out var lights))
+                        if (this.controllers.TryGetValue(room.ExiledRoom, out var lights))
                         {
                             if (room.ExiledRoom.Type == RoomType.HczChkpA || room.ExiledRoom.Type == RoomType.HczChkpB)
                                 tor[lights] = PathLightController.Side.SPECIAL;
@@ -262,10 +272,10 @@ namespace Mistaken.CustomStructures
 
         private void EnablePath(Dictionary<PathLightController, PathLightController.Side> path)
         {
-            foreach (var controller in this.Controllers.Values)
+            foreach (var controller in this.controllers.Values)
                 this.runningControllers.Remove(controller);
 
-            MEC.Timing.CallDelayed(2.1f, () =>
+            Timing.CallDelayed(2.1f, () =>
             {
                 foreach (var data in path.ToArray())
                 {
@@ -295,11 +305,11 @@ namespace Mistaken.CustomStructures
                 yield return Timing.WaitForSeconds(me.DoAnimationSingleCycle());
         }
 
-        private readonly Dictionary<Room, RoomPathLightSyncronizerScript> Syncronizers = new Dictionary<Room, RoomPathLightSyncronizerScript>();
-
         private IEnumerator<float> SynchronizationHandler()
         {
             yield return Timing.WaitForSeconds(1f);
+
+            Dictionary<Player, Room> lastRooms = new Dictionary<Player, Room>();
 
             while (Round.IsStarted)
             {
@@ -307,150 +317,46 @@ namespace Mistaken.CustomStructures
 
                 foreach (var player in RealPlayers.List)
                 {
-                    var room = API.Utilities.Room.Get(player.CurrentRoom);
+                    var curRoom = player.CurrentRoom;
+
+                    if (lastRooms.TryGetValue(player, out var lastRoom) && lastRoom == curRoom)
+                        continue; // Skip, room didn't change since last update
+
+                    lastRooms[player] = curRoom;
+
+                    var room = API.Utilities.Room.Get(curRoom);
 
                     if (room == null)
                     {
-                        foreach (var item in this.Syncronizers.Values)
+                        foreach (var item in this.synchronizers.Values)
                             item.RemoveSubscriber(player);
 
                         continue;
                     }
 
-                    // ToDo: sprawdziæ czy pomieszczenie siê woglê zmieni³o od ostatniego razu i nie aktualizowaæ jak tak
                     var otherRooms = room.FarNeighbors;
 
-                    List<RoomPathLightSyncronizerScript> sync = new List<RoomPathLightSyncronizerScript>();
-                    if (this.Syncronizers.TryGetValue(room.ExiledRoom, out var script))
-                        sync.Add(script);
+                    HashSet<RoomPathLightSynchronizerScript> toSync = NorthwoodLib.Pools.HashSetPool<RoomPathLightSynchronizerScript>.Shared.Rent();
+
+                    if (this.synchronizers.TryGetValue(room.ExiledRoom, out var script))
+                        toSync.Add(script);
+
+                    // ReSharper disable once LoopCanBeConvertedToQuery
                     foreach (var item in otherRooms)
                     {
-                        if (this.Syncronizers.TryGetValue(item.ExiledRoom, out script))
-                            sync.Add(script);
+                        if (this.synchronizers.TryGetValue(item.ExiledRoom, out script))
+                            toSync.Add(script);
                     }
 
-                    foreach (var item in this.Syncronizers.Values.Where(x => !sync.Contains(x)))
-                    {
+                    foreach (var item in this.synchronizers.Values.Where(x => !toSync.Contains(x)))
                         item.RemoveSubscriber(player);
-                    }
 
-                    foreach (var item in sync)
-                    {
+                    foreach (var item in toSync)
                         item.AddSubscriber(player);
-                    }
+
+                    NorthwoodLib.Pools.HashSetPool<RoomPathLightSynchronizerScript>.Shared.Return(toSync);
                 }
             }
-        }
-    }
-
-    internal class PathLightSyncronizerScript : MonoBehaviour
-    {
-        internal RoomPathLightSyncronizerScript controller;
-
-        internal LightSourceToy Toy { get; set; }
-
-        private Light light;
-
-        internal readonly Dictionary<Player, float> LastStates = new Dictionary<Player, float>();
-
-        private float lastState;
-
-        private void Awake()
-        {
-            this.light = this.GetComponent<Light>();
-        }
-
-        private void LateUpdate()
-        {
-            if (this.Toy == null)
-                return;
-
-            if (this.Toy.NetworkLightColor != this.light.color)
-            {
-                this.Toy.NetworkLightColor = this.light.color;
-                this.Toy.NetworkLightIntensity = this.light.intensity;
-            }
-            else if (this.light.intensity != this.lastState)
-            {
-                this.lastState = this.light.intensity;
-
-                foreach (var item in this.controller.Subscribers)
-                    this.UpdateSubscriber(item);
-            }
-        }
-
-        internal void UpdateSubscriber(Player player)
-        {
-            if (this.LastStates[player] == this.lastState)
-                return;
-
-            this.SyncFor(player);
-
-            this.LastStates[player] = this.lastState;
-        }
-
-        private void SyncFor(Player player)
-        {
-            PooledNetworkWriter writer = NetworkWriterPool.GetWriter();
-            PooledNetworkWriter writer2 = NetworkWriterPool.GetWriter();
-            typeof(MirrorExtensions)
-                .GetMethod("MakeCustomSyncWriter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-                .Invoke(null, new object[]
-                {
-                        this.Toy.netIdentity,
-                        typeof(LightSourceToy),
-                        null,
-                        (Action<NetworkWriter>)CustomSyncVarGenerator,
-                        writer,
-                        writer2,
-                });
-            player.ReferenceHub.networkIdentity.connectionToClient.Send(new UpdateVarsMessage
-            {
-                netId = this.Toy.netIdentity.netId,
-                payload = writer.ToArraySegment(),
-            });
-            NetworkWriterPool.Recycle(writer);
-            NetworkWriterPool.Recycle(writer2);
-            void CustomSyncVarGenerator(NetworkWriter targetWriter)
-            {
-                targetWriter.WriteUInt64(0UL);
-                targetWriter.WriteUInt64(16UL);
-                targetWriter.WriteSingle(this.lastState);
-            }
-        }
-    }
-
-    internal class RoomPathLightSyncronizerScript : MonoBehaviour
-    {
-        private PathLightSyncronizerScript[] lights = null;
-
-        internal readonly HashSet<Player> Subscribers = new HashSet<Player>();
-
-        public void AddSubscriber(Player player)
-        {
-            if (this.Subscribers.Contains(player))
-                return;
-
-            this.Subscribers.Add(player);
-            foreach (var light in this.lights)
-            {
-                if (!light.LastStates.ContainsKey(player))
-                    light.LastStates[player] = 0;
-                light.UpdateSubscriber(player);
-            }
-        }
-
-        public void RemoveSubscriber(Player player)
-        {
-            this.Subscribers.Remove(player);
-        }
-
-        private void Awake()
-        {
-            this.lights = this.GetComponentsInChildren<PathLightSyncronizerScript>();
-
-            foreach (var item in this.lights)
-                item.controller = this;
         }
     }
 }

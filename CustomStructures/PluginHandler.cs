@@ -10,6 +10,7 @@ using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using HarmonyLib;
+using Mistaken.CustomStructures.Pathlights;
 using Mirror;
 using Mistaken.API;
 using Mistaken.UnityPrefabs;
