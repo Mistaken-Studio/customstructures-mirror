@@ -6,6 +6,7 @@
 
 using AdminToys;
 using Exiled.API.Features;
+using Mistaken.UnityPrefabs;
 using UnityEngine;
 
 namespace Mistaken.CustomStructures
@@ -15,10 +16,12 @@ namespace Mistaken.CustomStructures
         internal LightSourceToy Toy { get; set; }
 
         private Light light;
+        private AssetMeta meta;
 
         private void Awake()
         {
             this.light = this.GetComponent<Light>();
+            this.meta = this.GetComponentInParent<AssetMeta>();
         }
 
         private void LateUpdate()
@@ -27,7 +30,7 @@ namespace Mistaken.CustomStructures
                 return;
 
             if (!this.light.enabled && this.light.intensity != 0)
-                Log.Warn($"Do not disable light, Set intensity to 0 instead ({this.transform.position})");
+                Log.Warn($"Do not disable light, Set intensity to 0 instead ({this.transform.position}) ({this.meta?.gameObject.name}: {this.meta?.Type})");
 
             if (this.Toy.NetworkLightColor != this.light.color)
                 this.Toy.NetworkLightColor = this.light.color;
