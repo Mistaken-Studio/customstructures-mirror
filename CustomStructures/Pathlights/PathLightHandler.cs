@@ -143,7 +143,7 @@ namespace Mistaken.CustomStructures.Pathlights
 
             this.RunCoroutine(this.SynchronizationHandler(), nameof(this.SynchronizationHandler));
 
-            this.EnablePath(this.nukePath);
+            // this.EnablePath(this.nukePath);
         }
 
         private void RemovePathLightsFrom(params ZoneType[] zones)
