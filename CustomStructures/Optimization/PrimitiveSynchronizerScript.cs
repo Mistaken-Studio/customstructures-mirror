@@ -10,8 +10,8 @@ using AdminToys;
 using Exiled.API.Features;
 using Mirror;
 using UnityEngine;
-// ReSharper disable NonReadonlyMemberInGetHashCode
 
+// ReSharper disable NonReadonlyMemberInGetHashCode
 #pragma warning disable SA1118 // Parameter should not span multiple lines
 #pragma warning disable SA1401 // Fields should be private
 #pragma warning disable SA1116 // Split parameters should start on line after declaration
@@ -139,11 +139,11 @@ namespace Mistaken.CustomStructures.Optimization
             {
                 // ToDo - Rewrite to send only what has changed
                 targetWriter.WriteUInt64(0UL + (syncPosition ? 1UL : 0UL) + (syncRotation ? 2UL : 0UL) + (syncScale ? 4UL : 0UL)); // position (1) + rotation (2) + scale (4)
-                targetWriter.WriteVector3(this.lastState.position);
-                targetWriter.WriteLowPrecisionQuaternion(this.lastState.rotation);
-                targetWriter.WriteVector3(this.lastState.scale);
+                if (syncPosition) targetWriter.WriteVector3(this.lastState.position);
+                if (syncRotation) targetWriter.WriteLowPrecisionQuaternion(this.lastState.rotation);
+                if (syncScale) targetWriter.WriteVector3(this.lastState.scale);
                 targetWriter.WriteUInt64(0UL + (syncColor ? 32UL : 0UL)); // color (32)
-                targetWriter.WriteColor(this.lastState.color);
+                if (syncColor) targetWriter.WriteColor(this.lastState.color);
             }
         }
     }
