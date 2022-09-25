@@ -6,7 +6,6 @@
 
 using AdminToys;
 using Exiled.API.Features;
-using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs;
 using UnityEngine;
 
@@ -18,7 +17,6 @@ namespace Mistaken.CustomStructures
 
         private Light light;
         private AssetMeta meta;
-        private bool illegalState = false;
 
         private void Awake()
         {
@@ -31,16 +29,8 @@ namespace Mistaken.CustomStructures
             if (this.Toy == null)
                 return;
 
-            if (!this.illegalState)
-            {
-                if (!this.light.enabled && this.light.intensity != 0)
-                {
-                    Log.Warn(
-                        $"Do not disable light, Set intensity to 0 instead ({this.transform.position}) ({this.meta?.gameObject.name}: {this.meta?.Type})");
-                    this.illegalState = true;
-                    Module.CallSafeDelayed(1f, () => this.illegalState = false, "DisableIllegalState");
-                }
-            }
+            if (!this.light.enabled && this.light.intensity != 0)
+                Log.Warn($"Do not disable light, Set intensity to 0 instead ({this.transform.position}) ({this.meta?.gameObject.name}: {this.meta?.Type})");
 
             if (this.Toy.NetworkLightColor != this.light.color)
                 this.Toy.NetworkLightColor = this.light.color;
