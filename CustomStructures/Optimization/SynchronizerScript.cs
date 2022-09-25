@@ -76,13 +76,13 @@ namespace Mistaken.CustomStructures.Optimization
 
         protected virtual bool ShouldUpdate()
         {
-            if (this.Toy.Position != this.CurrentState.Position ||
-                this.Toy.Rotation != this.CurrentState.Rotation ||
-                this.Toy.Scale != this.CurrentState.Scale)
+            if (this.gameObject.transform.position != this.CurrentState.Position ||
+                this.gameObject.transform.rotation != this.CurrentState.Rotation.Value ||
+                this.gameObject.transform.lossyScale != this.CurrentState.Scale)
             {
-                this.CurrentState.Position = this.Toy.Position;
-                this.CurrentState.Rotation = this.Toy.Rotation;
-                this.CurrentState.Scale = this.Toy.Scale;
+                this.CurrentState.Position = this.gameObject.transform.position;
+                this.CurrentState.Rotation = new LowPrecisionQuaternion(this.gameObject.transform.rotation);
+                this.CurrentState.Scale = this.gameObject.transform.lossyScale;
 
                 return true;
             }

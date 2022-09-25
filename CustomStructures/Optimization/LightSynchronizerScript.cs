@@ -6,6 +6,7 @@
 
 using System;
 using AdminToys;
+using Exiled.API.Features;
 using Mirror;
 using UnityEngine;
 
@@ -44,6 +45,9 @@ namespace Mistaken.CustomStructures.Optimization
 
             if (!(playerState is LightState state))
                 throw new ArgumentException($"Supplied {nameof(playerState)} was not {nameof(LightState)}, it was {playerState?.GetType().FullName ?? "NULL"}", nameof(playerState));
+
+            if (!this.light.enabled && this.light.intensity != 0)
+                Log.Warn($"Do not disable light, Set intensity to 0 instead ({this.transform.position})");
 
             if (this.currentLightState.Intensity != state.Intensity) tor += 16;
             if (this.currentLightState.Range != state.Range) tor += 32;
