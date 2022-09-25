@@ -10,9 +10,11 @@ using AdminToys;
 using Exiled.API.Features;
 using Mirror;
 using UnityEngine;
+// ReSharper disable NonReadonlyMemberInGetHashCode
 
 #pragma warning disable SA1118 // Parameter should not span multiple lines
 #pragma warning disable SA1401 // Fields should be private
+#pragma warning disable SA1116 // Split parameters should start on line after declaration
 #pragma warning disable IDE0051
 
 namespace Mistaken.CustomStructures.Optimization
@@ -24,7 +26,7 @@ namespace Mistaken.CustomStructures.Optimization
         internal class PrimitiveState
         {
             public static bool operator ==(PrimitiveState a, PrimitiveState b)
-                => a.Equals(b);
+                => a?.Equals(b) ?? b is null;
 
             public static bool operator !=(PrimitiveState a, PrimitiveState b)
                 => !(a == b);
@@ -53,11 +55,15 @@ namespace Mistaken.CustomStructures.Optimization
             }
 
             // ToDo - Add support for de-spawning objects
-            public bool visible;
-            public Vector3 position;
-            public LowPrecisionQuaternion rotation;
-            public Vector3 scale;
-            public Color color;
+            public bool visible { get; set; }
+
+            public Vector3 position { get; set; }
+
+            public LowPrecisionQuaternion rotation { get; set; }
+
+            public Vector3 scale { get; set; }
+
+            public Color color { get; set; }
         }
 
         internal new PrimitiveObjectToy Toy => (PrimitiveObjectToy)base.Toy;
@@ -70,7 +76,7 @@ namespace Mistaken.CustomStructures.Optimization
             if (this.LastStates[player] == this.lastState)
                 return;
 
-            this.SyncFor(player);
+            this.SyncFor(player, this.LastStates[player]);
 
             this.LastStates[player] = this.lastState;
         }
@@ -97,7 +103,15 @@ namespace Mistaken.CustomStructures.Optimization
             }
         }
 
-        private void SyncFor(Player player)
+        private void SyncFor(Player player, PrimitiveState playerState)
+            =>
+                this.SyncFor(player,
+                    this.lastState.position != playerState.position,
+                    this.lastState.rotation != playerState.rotation,
+                    this.lastState.scale != playerState.scale,
+                    this.lastState.color != playerState.color);
+
+        private void SyncFor(Player player, bool syncPosition, bool syncRotation, bool syncScale, bool syncColor)
         {
             var writer = NetworkWriterPool.GetWriter();
             var writer2 = NetworkWriterPool.GetWriter();
@@ -124,11 +138,11 @@ namespace Mistaken.CustomStructures.Optimization
             void CustomSyncVarGenerator(NetworkWriter targetWriter)
             {
                 // ToDo - Rewrite to send only what has changed
-                targetWriter.WriteUInt64(7UL); // position (1) + rotation (2) + scale (4)
+                targetWriter.WriteUInt64(0UL + (syncPosition ? 1UL : 0UL) + (syncRotation ? 2UL : 0UL) + (syncScale ? 4UL : 0UL)); // position (1) + rotation (2) + scale (4)
                 targetWriter.WriteVector3(this.lastState.position);
                 targetWriter.WriteLowPrecisionQuaternion(this.lastState.rotation);
                 targetWriter.WriteVector3(this.lastState.scale);
-                targetWriter.WriteUInt64(32UL); // color (32)
+                targetWriter.WriteUInt64(0UL + (syncColor ? 32UL : 0UL)); // color (32)
                 targetWriter.WriteColor(this.lastState.color);
             }
         }
