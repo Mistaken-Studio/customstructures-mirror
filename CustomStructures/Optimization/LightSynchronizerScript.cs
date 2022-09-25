@@ -5,150 +5,108 @@
 // -----------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using AdminToys;
-using Exiled.API.Features;
 using Mirror;
 using UnityEngine;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable CompareOfFloatsByEqualityOperator
 // ReSharper disable NonReadonlyMemberInGetHashCode
-#pragma warning disable SA1118 // Parameter should not span multiple lines
-#pragma warning disable SA1401 // Fields should be private
-#pragma warning disable IDE0051
-
 namespace Mistaken.CustomStructures.Optimization
 {
     internal class LightSynchronizerScript : SynchronizerScript
     {
-        internal readonly Dictionary<Player, LightState> LastStates = new Dictionary<Player, LightState>();
+        protected override State CurrentState => this.currentLightState;
 
-        internal class LightState
+        protected override Type ToyType => typeof(LightSourceToy);
+
+        protected override bool ShouldUpdate()
         {
-            public static bool operator ==(LightState a, LightState b)
-                => a?.Equals(b) ?? b is null;
+            if (base.ShouldUpdate() ||
+                this.light.color != this.currentLightState.Color ||
+                this.light.intensity != this.currentLightState.Intensity ||
+                this.light.range != this.currentLightState.Range ||
+                (this.light.shadows == LightShadows.Soft) != this.currentLightState.Shadows)
+            {
+                this.currentLightState.Color = this.light.color;
+                this.currentLightState.Intensity = this.light.intensity;
+                this.currentLightState.Range = this.light.range;
+                this.currentLightState.Shadows = this.light.shadows == LightShadows.Soft;
+                return true;
+            }
 
-            public static bool operator !=(LightState a, LightState b)
-                => !(a == b);
+            return false;
+        }
 
-            public override bool Equals(object obj)
-                => obj is LightState other && this.Equals(other);
+        protected override ulong GetStateFlags(State playerState)
+        {
+            var tor = base.GetStateFlags(playerState);
+
+            if (!(playerState is LightState state))
+                throw new ArgumentException($"Supplied {nameof(playerState)} was not {nameof(LightState)}, it was {playerState?.GetType().FullName ?? "NULL"}", nameof(playerState));
+
+            if (this.currentLightState.Intensity != state.Intensity) tor += 16;
+            if (this.currentLightState.Range != state.Range) tor += 32;
+            if (this.currentLightState.Color != state.Color) tor += 64;
+            if (this.currentLightState.Shadows != state.Shadows) tor += 128;
+
+            return tor;
+        }
+
+        protected override Action<NetworkWriter> CustomSyncVarGenerator(ulong flags, Action<NetworkWriter> callBackAction = null)
+        {
+            return base.CustomSyncVarGenerator(flags, targetWriter =>
+            {
+                targetWriter.WriteUInt64(flags & (16 + 32 + 64 + 128));  // intensity (16) + range (32) + color (64) + shadows (128)
+                if ((flags & 16) != 0) targetWriter.WriteSingle(this.currentLightState.Intensity);
+                if ((flags & 32) != 0) targetWriter.WriteSingle(this.currentLightState.Range);
+                if ((flags & 64) != 0) targetWriter.WriteColor(this.currentLightState.Color);
+                if ((flags & 128) != 0) targetWriter.WriteBoolean(this.currentLightState.Shadows);
+                callBackAction?.Invoke(targetWriter);
+            });
+        }
+
+        protected class LightState : State
+        {
+            public float Intensity { get; set; }
+
+            public float Range { get; set; }
+
+            public bool Shadows { get; set; }
+
+            public Color Color { get; set; }
+
+            public override bool Equals(State other)
+                =>
+                    base.Equals(other) &&
+                    other is LightState light &&
+                    this.Intensity.Equals(light.Intensity) &&
+                    this.Range.Equals(light.Range) &&
+                    this.Shadows == light.Shadows &&
+                    this.Color.Equals(light.Color);
 
             public override int GetHashCode()
             {
                 unchecked
                 {
-                    var hashCode = this.intensity.GetHashCode();
-                    hashCode = (hashCode * 397) ^ this.range.GetHashCode();
-                    hashCode = (hashCode * 397) ^ this.shadows.GetHashCode();
-                    hashCode = (hashCode * 397) ^ this.color.GetHashCode();
+                    var hashCode = base.GetHashCode();
+                    hashCode = (hashCode * 397) ^ this.Intensity.GetHashCode();
+                    hashCode = (hashCode * 397) ^ this.Range.GetHashCode();
+                    hashCode = (hashCode * 397) ^ this.Shadows.GetHashCode();
+                    hashCode = (hashCode * 397) ^ this.Color.GetHashCode();
                     return hashCode;
                 }
             }
-
-            protected bool Equals(LightState other)
-            {
-                return this.intensity.Equals(other.intensity) &&
-                       this.range.Equals(other.range) &&
-                       this.shadows == other.shadows &&
-                       this.color.Equals(other.color);
-            }
-
-            public float intensity { get; set; }
-
-            public float range { get; set; }
-
-            public bool shadows { get; set; }
-
-            public Color color { get; set; }
         }
 
-        internal new LightSourceToy Toy => (LightSourceToy)base.Toy;
-
-        internal override void UpdateSubscriber(Player player)
-        {
-            if (!this.LastStates.ContainsKey(player))
-                this.LastStates[player] = new LightState();
-
-            if (this.LastStates[player] == this.lastState)
-                return;
-
-            this.SyncFor(player, this.LastStates[player]);
-
-            this.LastStates[player] = this.lastState;
-        }
-
+        private readonly LightState currentLightState = new LightState();
         private Light light;
 
-        private LightState lastState;
+        private new LightSourceToy Toy => (LightSourceToy)base.Toy;
 
         private void Awake()
         {
             this.light = this.GetComponent<Light>();
-        }
-
-        private void LateUpdate()
-        {
-            if (this.Toy == null)
-                return;
-
-            if (this.light.color != this.lastState.color ||
-                this.light.intensity != this.lastState.intensity ||
-                this.light.range != this.lastState.range ||
-                (this.light.shadows == LightShadows.Soft) != this.lastState.shadows)
-            {
-                this.lastState.color = this.light.color;
-                this.lastState.intensity = this.light.intensity;
-                this.lastState.range = this.light.range;
-                this.lastState.shadows = this.light.shadows == LightShadows.Soft;
-
-                foreach (var item in this.Controller.Subscribers)
-                    this.UpdateSubscriber(item);
-            }
-        }
-
-        private void SyncFor(Player player, LightState playerState)
-            =>
-                this.SyncFor(player,
-                    this.lastState.color != playerState.color,
-                    this.lastState.intensity != playerState.intensity,
-                    this.lastState.range != playerState.range,
-                    this.lastState.shadows != playerState.shadows);
-
-        private void SyncFor(Player player, bool syncColor, bool syncIntensity, bool syncRange, bool syncShadows)
-        {
-            var writer = NetworkWriterPool.GetWriter();
-            var writer2 = NetworkWriterPool.GetWriter();
-
-            MakeCustomSyncWriter.Invoke(null, new object[]
-            {
-                this.Toy.netIdentity,
-                typeof(LightSourceToy),
-                null,
-                (Action<NetworkWriter>)CustomSyncVarGenerator,
-                writer,
-                writer2,
-            });
-
-            player.ReferenceHub.networkIdentity.connectionToClient.Send(new UpdateVarsMessage
-            {
-                netId = this.Toy.netIdentity.netId,
-                payload = writer.ToArraySegment(),
-            });
-
-            NetworkWriterPool.Recycle(writer);
-            NetworkWriterPool.Recycle(writer2);
-
-            void CustomSyncVarGenerator(NetworkWriter targetWriter)
-            {
-                targetWriter.WriteUInt64(0UL);
-                targetWriter.WriteUInt64((syncIntensity ? 16UL : 0UL) + (syncRange ? 32UL : 0UL) + (syncColor ? 64UL : 0UL) + (syncShadows ? 128UL : 0UL)); // intensity (16) + range (32) + color (64) + shadows (128)
-                if (syncIntensity) targetWriter.WriteSingle(this.lastState.intensity);
-                if (syncRange) targetWriter.WriteSingle(this.lastState.range);
-                if (syncColor) targetWriter.WriteColor(this.lastState.color);
-                if (syncShadows) targetWriter.WriteBoolean(this.lastState.shadows);
-            }
         }
     }
 }

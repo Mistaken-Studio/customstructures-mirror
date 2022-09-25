@@ -5,146 +5,84 @@
 // -----------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using AdminToys;
-using Exiled.API.Features;
 using Mirror;
 using UnityEngine;
 
 // ReSharper disable NonReadonlyMemberInGetHashCode
-#pragma warning disable SA1118 // Parameter should not span multiple lines
-#pragma warning disable SA1401 // Fields should be private
-#pragma warning disable SA1116 // Split parameters should start on line after declaration
-#pragma warning disable IDE0051
-
 namespace Mistaken.CustomStructures.Optimization
 {
     internal class PrimitiveSynchronizerScript : SynchronizerScript
     {
-        internal readonly Dictionary<Player, PrimitiveState> LastStates = new Dictionary<Player, PrimitiveState>();
+        protected override Type ToyType => typeof(PrimitiveObjectToy);
 
-        internal class PrimitiveState
+        protected override State CurrentState => this.currentPrimitiveState;
+
+        protected override bool ShouldUpdate()
         {
-            public static bool operator ==(PrimitiveState a, PrimitiveState b)
-                => a?.Equals(b) ?? b is null;
+            if (!base.ShouldUpdate() && this.meshRenderer.material.color == this.currentPrimitiveState.Color)
+                return false;
 
-            public static bool operator !=(PrimitiveState a, PrimitiveState b)
-                => !(a == b);
+            this.currentPrimitiveState.Color = this.meshRenderer.material.color;
+            return true;
+        }
 
-            public bool Equals(PrimitiveState other)
-                => this.visible == other.visible &&
-                   this.position.Equals(other.position) &&
-                   this.rotation.Equals(other.rotation) &&
-                   this.scale.Equals(other.scale) &&
-                   this.color.Equals(other.color);
+        protected override ulong GetStateFlags(State playerState)
+        {
+            var tor = base.GetStateFlags(playerState);
 
-            public override bool Equals(object obj)
-                => obj is PrimitiveState other && this.Equals(other);
+            if (!(playerState is PrimitiveState state))
+                throw new ArgumentException($"Supplied {nameof(playerState)} was not {nameof(PrimitiveState)}, it was {playerState?.GetType().FullName ?? "NULL"}", nameof(playerState));
+
+            if (this.currentPrimitiveState.Color != state.Color) tor += 32;
+
+            return tor;
+        }
+
+        protected override Action<NetworkWriter> CustomSyncVarGenerator(ulong flags, Action<NetworkWriter> callBackAction = null)
+        {
+            return base.CustomSyncVarGenerator(flags, targetWriter =>
+            {
+                targetWriter.WriteUInt64(flags & 32UL); // color (32) | flags & (~31UL)
+                if ((flags & 32) != 0) targetWriter.WriteColor(this.currentPrimitiveState.Color);
+                callBackAction?.Invoke(targetWriter);
+            });
+        }
+
+        protected class PrimitiveState : State
+        {
+            public override bool Equals(State other)
+                =>
+                    base.Equals(other) &&
+                    other is PrimitiveState primitive &&
+                    this.Visible == primitive.Visible &&
+                    this.Color == primitive.Color;
 
             public override int GetHashCode()
             {
                 unchecked
                 {
-                    var hashCode = this.visible.GetHashCode();
-                    hashCode = (hashCode * 397) ^ this.position.GetHashCode();
-                    hashCode = (hashCode * 397) ^ this.rotation.GetHashCode();
-                    hashCode = (hashCode * 397) ^ this.scale.GetHashCode();
-                    hashCode = (hashCode * 397) ^ this.color.GetHashCode();
+                    var hashCode = base.GetHashCode();
+                    hashCode = (hashCode * 397) ^ this.Visible.GetHashCode();
+                    hashCode = (hashCode * 397) ^ this.Color.GetHashCode();
                     return hashCode;
                 }
             }
 
             // ToDo - Add support for de-spawning objects
-            public bool visible { get; set; }
+            public bool Visible { get; set; }
 
-            public Vector3 position { get; set; }
-
-            public LowPrecisionQuaternion rotation { get; set; }
-
-            public Vector3 scale { get; set; }
-
-            public Color color { get; set; }
+            public Color Color { get; set; }
         }
 
-        internal new PrimitiveObjectToy Toy => (PrimitiveObjectToy)base.Toy;
+        private readonly PrimitiveState currentPrimitiveState = new PrimitiveState();
+        private MeshRenderer meshRenderer;
 
-        internal override void UpdateSubscriber(Player player)
+        private new PrimitiveObjectToy Toy => (PrimitiveObjectToy)base.Toy;
+
+        private void Awake()
         {
-            if (!this.LastStates.ContainsKey(player))
-                this.LastStates[player] = default;
-
-            if (this.LastStates[player] == this.lastState)
-                return;
-
-            this.SyncFor(player, this.LastStates[player]);
-
-            this.LastStates[player] = this.lastState;
-        }
-
-        private PrimitiveState lastState;
-
-        private void LateUpdate()
-        {
-            if (this.Toy == null)
-                return;
-
-            if (this.Toy.Position != this.lastState.position ||
-                this.Toy.Rotation != this.lastState.rotation ||
-                this.Toy.Scale != this.lastState.scale ||
-                this.Toy.MaterialColor != this.lastState.color)
-            {
-                this.lastState.position = this.Toy.Position;
-                this.lastState.rotation = this.Toy.Rotation;
-                this.lastState.scale = this.Toy.Scale;
-                this.lastState.color = this.Toy.MaterialColor;
-
-                foreach (var item in this.Controller.Subscribers)
-                    this.UpdateSubscriber(item);
-            }
-        }
-
-        private void SyncFor(Player player, PrimitiveState playerState)
-            =>
-                this.SyncFor(player,
-                    this.lastState.position != playerState.position,
-                    this.lastState.rotation != playerState.rotation,
-                    this.lastState.scale != playerState.scale,
-                    this.lastState.color != playerState.color);
-
-        private void SyncFor(Player player, bool syncPosition, bool syncRotation, bool syncScale, bool syncColor)
-        {
-            var writer = NetworkWriterPool.GetWriter();
-            var writer2 = NetworkWriterPool.GetWriter();
-
-            MakeCustomSyncWriter.Invoke(null, new object[]
-            {
-                this.Toy.netIdentity,
-                typeof(PrimitiveObjectToy),
-                null,
-                (Action<NetworkWriter>)CustomSyncVarGenerator,
-                writer,
-                writer2,
-            });
-
-            player.ReferenceHub.networkIdentity.connectionToClient.Send(new UpdateVarsMessage
-            {
-                netId = this.Toy.netIdentity.netId,
-                payload = writer.ToArraySegment(),
-            });
-
-            NetworkWriterPool.Recycle(writer);
-            NetworkWriterPool.Recycle(writer2);
-
-            void CustomSyncVarGenerator(NetworkWriter targetWriter)
-            {
-                // ToDo - Rewrite to send only what has changed
-                targetWriter.WriteUInt64(0UL + (syncPosition ? 1UL : 0UL) + (syncRotation ? 2UL : 0UL) + (syncScale ? 4UL : 0UL)); // position (1) + rotation (2) + scale (4)
-                if (syncPosition) targetWriter.WriteVector3(this.lastState.position);
-                if (syncRotation) targetWriter.WriteLowPrecisionQuaternion(this.lastState.rotation);
-                if (syncScale) targetWriter.WriteVector3(this.lastState.scale);
-                targetWriter.WriteUInt64(0UL + (syncColor ? 32UL : 0UL)); // color (32)
-                if (syncColor) targetWriter.WriteColor(this.lastState.color);
-            }
+            this.meshRenderer = this.GetComponent<MeshRenderer>();
         }
     }
 }
