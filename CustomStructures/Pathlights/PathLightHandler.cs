@@ -326,7 +326,10 @@ namespace Mistaken.CustomStructures.Pathlights
 
                     var room = API.Utilities.Room.Get(curRoom);
 
-                    if (room == null)
+                    // Don't even check for Surface, Other because there are no lights
+                    if (room == null ||
+                        room.ExiledRoom.Zone == ZoneType.Surface ||
+                        room.ExiledRoom.Zone == ZoneType.Unspecified)
                     {
                         foreach (var item in this.synchronizers.Values)
                             item.RemoveSubscriber(player);
