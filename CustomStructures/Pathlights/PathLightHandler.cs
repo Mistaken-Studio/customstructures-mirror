@@ -127,7 +127,7 @@ namespace Mistaken.CustomStructures.Pathlights
             this.decontaminationPath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
             this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
 
-            this.EnablePath(this.nukePath);
+            // this.EnablePath(this.nukePath);
         }
 
         private void RemovePathLightsFrom(params ZoneType[] zones)
