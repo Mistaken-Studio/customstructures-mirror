@@ -10,15 +10,16 @@ using System.Linq;
 using AdminToys;
 using Exiled.API.Enums;
 using Exiled.API.Features;
-using Exiled.API.Features.Items;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Firearms.Ammo;
 using InventorySystem.Items.Pickups;
 using Mirror;
+using Mirror.LiteNetLib4Mirror;
 using Mistaken.API.Extensions;
 using Mistaken.UnityPrefabs;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 // Code "borrowed" from
 // https://github.com/Killers0992/AssetBundleLoader/blob/master/AssetBundleLoader/AssetBundlePrefab.cs
@@ -64,11 +65,18 @@ namespace Mistaken.CustomStructures
         /// <returns>Spawned asset.</returns>
         public GameObject Spawn(Vector3 position, Vector3 eulerAngles, Vector3 scale)
         {
-            var tor = new GameObject();
-            tor.transform.position = position;
-            tor.transform.eulerAngles = eulerAngles;
-            tor.transform.localScale = scale;
+            var tor = new GameObject
+            {
+                transform =
+                {
+                    position = position,
+                    eulerAngles = eulerAngles,
+                    localScale = scale,
+                },
+            };
+
             this.Spawn(tor.transform);
+
             return tor;
         }
 
@@ -79,7 +87,7 @@ namespace Mistaken.CustomStructures
         /// <returns>Spawned asset.</returns>
         public GameObject Spawn(Transform parent)
         {
-            var prefabObject = UnityEngine.Object.Instantiate(this.Prefab, parent);
+            var prefabObject = Object.Instantiate(this.Prefab, parent);
             prefabObject.hideFlags = HideFlags.HideAndDontSave;
             this.SpawnedChildren[prefabObject] = new List<GameObject>();
 
@@ -100,9 +108,8 @@ namespace Mistaken.CustomStructures
                     {
                         if (item == transform)
                             continue;
-                        item.gameObject.SetActive(false);
 
-                        // Exiled.API.Features.Log.Debug($"Disabled {item.gameObject.name} because of {transform.name}", true);
+                        item.gameObject.SetActive(false);
                     }
                 }
             }
@@ -118,7 +125,7 @@ namespace Mistaken.CustomStructures
                     {
                         foreach (var transform2 in me.GetComponentsInChildren<Transform>())
                         {
-                            if (!transform2.TryGetComponent<MeshRenderer>(out MeshRenderer renderer2))
+                            if (!transform2.TryGetComponent(out MeshRenderer renderer2))
                                 continue;
 
                             this.SpawnedChildren[prefabObject].Add(CreatePrimitive(
@@ -131,32 +138,28 @@ namespace Mistaken.CustomStructures
                     continue;
                 }
 
-                if (transform.TryGetComponent<Light>(out Light light))
+                if (transform.TryGetComponent(out Light light))
                 {
-                    var toy = CreateLight(
-                        transform,
-                        light.color,
-                        light.intensity,
-                        light.range,
-                        light.shadows != LightShadows.None);
-                    transform.gameObject.AddComponent<LightSynchronizerScript>().Toy = toy;
+                    var toy = CreateLight(light);
+
+                    // transform.gameObject.AddComponent<LightSynchronizerScript>().Toy = toy;
                     this.SpawnedChildren[prefabObject].Add(toy.gameObject);
                 }
 
-                if (!transform.TryGetComponent<MeshFilter>(out MeshFilter filter))
+                if (!transform.TryGetComponent(out MeshFilter filter))
                 {
                     string name = transform.name;
                     string[] nameArgs = name.Split(' ');
                     var tor = CreateEmpty(transform);
                     if (transform.TryGetComponent(out UnityPrefabs.Door doorScript))
                     {
-                        DoorVariant door = null;
+                        DoorVariant door;
 
                         switch (nameArgs[0])
                         {
                             case "HCZ_DOOR":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning HCZ Door", PluginHandler.Instance.Config.VerbouseOutput);
+                                Log.Debug("Spawning HCZ Door", PluginHandler.Instance.Config.VerbouseOutput);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.HCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
                                 this.Doors[transform.gameObject] = door;
@@ -165,7 +168,7 @@ namespace Mistaken.CustomStructures
 
                             case "EZ_DOOR":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning EZ Door", PluginHandler.Instance.Config.VerbouseOutput);
+                                Log.Debug("Spawning EZ Door", PluginHandler.Instance.Config.VerbouseOutput);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.EZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
                                 this.Doors[transform.gameObject] = door;
@@ -174,7 +177,7 @@ namespace Mistaken.CustomStructures
 
                             case "LCZ_DOOR":
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning LCZ Door", PluginHandler.Instance.Config.VerbouseOutput);
+                                Log.Debug("Spawning LCZ Door", PluginHandler.Instance.Config.VerbouseOutput);
                                 door = DoorUtils.SpawnDoor(DoorUtils.DoorType.LCZ_BREAKABLE, tor.transform.position, tor.transform.eulerAngles, tor.transform.lossyScale);
 
                                 this.Doors[transform.gameObject] = door;
@@ -204,7 +207,7 @@ namespace Mistaken.CustomStructures
                             if (doorScript.DestroyAfterUse)
                                 RemovePostUse.Add(door);
 
-                            var animatorTriggerScript = transform.gameObject.GetComponent<UnityPrefabs.AnimatorTrigger>();
+                            var animatorTriggerScript = transform.gameObject.GetComponent<AnimatorTrigger>();
                             if (animatorTriggerScript != null)
                                 ConnectedDoorAnimators[door] = animatorTriggerScript;
 
@@ -213,13 +216,13 @@ namespace Mistaken.CustomStructures
                                 ConnectedDoorScriptTriggers[door] = scriptTriggerScript;
                         }
                     }
-                    else if (transform.TryGetComponent<UnityPrefabs.Item>(out UnityPrefabs.Item itemScript))
+                    else if (transform.TryGetComponent(out Item itemScript))
                     {
-                        string[] args = name.Split('_');
-
                         transform.gameObject.SetActive(false);
                         ItemPickupBase spawned;
                         var itemType = (ItemType)itemScript.Type;
+
+                        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                         switch (itemType)
                         {
                             case ItemType.None:
@@ -293,7 +296,7 @@ namespace Mistaken.CustomStructures
                         if (itemScript.DestroyAfterUse)
                             RemovePostUseItem.Add(spawned);
 
-                        var animatorTriggerScript = transform.gameObject.GetComponent<UnityPrefabs.AnimatorTrigger>();
+                        var animatorTriggerScript = transform.gameObject.GetComponent<AnimatorTrigger>();
                         if (animatorTriggerScript != null)
                             ConnectedItemAnimators[spawned] = animatorTriggerScript;
 
@@ -307,7 +310,7 @@ namespace Mistaken.CustomStructures
                         case "BINARY_TARGET":
                             {
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning BINARY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
+                                Log.Debug("Spawning BINARY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
                                 var target = SpawnShootingTarget(ShootingTargetType.Binary, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
@@ -317,7 +320,7 @@ namespace Mistaken.CustomStructures
                         case "DBOY_TARGET":
                             {
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning DBOY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
+                                Log.Debug("Spawning DBOY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
                                 var target = SpawnShootingTarget(ShootingTargetType.ClassD, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
@@ -327,7 +330,7 @@ namespace Mistaken.CustomStructures
                         case "SPORT_TARGET":
                             {
                                 transform.gameObject.SetActive(false);
-                                Exiled.API.Features.Log.Debug($"Spawning SPORT_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
+                                Log.Debug("Spawning SPORT_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
                                 var target = SpawnShootingTarget(ShootingTargetType.Sport, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
@@ -336,16 +339,13 @@ namespace Mistaken.CustomStructures
 
                         case "WORK_STATION":
                             transform.gameObject.SetActive(false);
-                            Exiled.API.Features.Log.Debug($"Spawning WORK_STATION", PluginHandler.Instance.Config.VerbouseOutput);
-                            var workStation = GameObject.Instantiate(CustomNetworkManager.singleton.spawnPrefabs.First(x => x.name == "Work Station"));
+                            Log.Debug("Spawning WORK_STATION", PluginHandler.Instance.Config.VerbouseOutput);
+                            var workStation = Object.Instantiate(LiteNetLib4MirrorNetworkManager.singleton.spawnPrefabs.First(x => x.name == "Work Station"));
                             workStation.transform.position = tor.transform.position;
                             workStation.transform.rotation = tor.transform.rotation;
                             workStation.transform.localScale = tor.transform.localScale;
                             NetworkServer.Spawn(workStation);
                             this.SpawnedChildren[prefabObject].Add(workStation);
-                            break;
-
-                        default:
                             break;
                     }
 
@@ -353,11 +353,11 @@ namespace Mistaken.CustomStructures
                     continue;
                 }
 
-                if (!transform.TryGetComponent<MeshRenderer>(out MeshRenderer renderer))
+                if (!transform.TryGetComponent(out MeshRenderer renderer))
                     continue;
 
-                PrimitiveType type = PrimitiveType.Sphere;
-                bool hasCollision = transform.TryGetComponent<Collider>(out _);
+                PrimitiveType type;
+                var hasCollision = transform.TryGetComponent<Collider>(out _);
 
                 switch (filter.mesh.name)
                 {
@@ -404,11 +404,12 @@ namespace Mistaken.CustomStructures
         internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
         internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
 
-        private static AdminToys.ShootingTarget shootingTargetObject_binary = null;
-        private static AdminToys.ShootingTarget shootingTargetObject_sport = null;
-        private static AdminToys.ShootingTarget shootingTargetObject_dboy = null;
+        // ReSharper disable InconsistentNaming
+        private static ShootingTarget shootingTargetObject_binary;
+        private static ShootingTarget shootingTargetObject_sport;
+        private static ShootingTarget shootingTargetObject_dboy;
 
-        private static AdminToys.ShootingTarget ShootingTargetObjectBinary
+        private static ShootingTarget ShootingTargetObjectBinary
         {
             get
             {
@@ -416,7 +417,7 @@ namespace Mistaken.CustomStructures
                 {
                     foreach (var gameObject in NetworkClient.prefabs.Values)
                     {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
+                        if (gameObject.TryGetComponent<ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
                             shootingTargetObject_binary = component;
                     }
                 }
@@ -425,7 +426,7 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        private static AdminToys.ShootingTarget ShootingTargetObjectSport
+        private static ShootingTarget ShootingTargetObjectSport
         {
             get
             {
@@ -433,7 +434,7 @@ namespace Mistaken.CustomStructures
                 {
                     foreach (var gameObject in NetworkClient.prefabs.Values)
                     {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
+                        if (gameObject.TryGetComponent<ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
                             shootingTargetObject_sport = component;
                     }
                 }
@@ -442,7 +443,7 @@ namespace Mistaken.CustomStructures
             }
         }
 
-        private static AdminToys.ShootingTarget ShootingTargetObjectDBoy
+        private static ShootingTarget ShootingTargetObjectDBoy
         {
             get
             {
@@ -450,7 +451,7 @@ namespace Mistaken.CustomStructures
                 {
                     foreach (var gameObject in NetworkClient.prefabs.Values)
                     {
-                        if (gameObject.TryGetComponent<AdminToys.ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
+                        if (gameObject.TryGetComponent<ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
                             shootingTargetObject_dboy = component;
                     }
                 }
@@ -485,21 +486,25 @@ namespace Mistaken.CustomStructures
                 }
             }
 
-            var toy = API.MapPlus.SpawnPrimitive(type, parent, color, hasCollision, sync, sync ? (byte?)60 : null);
-
-            if (colorSync)
-                parent.gameObject.AddComponent<ColorSynchronizerScript>().Toy = toy;
+            var toy = API.Toys.ToyHandler.SpawnPrimitive(
+                type,
+                parent,
+                color,
+                hasCollision,
+                sync,
+                sync ? (byte?)60 : null,
+                colorSync ? (parent.gameObject.GetComponent<MeshRenderer>() ?? throw new NullReferenceException("Requested ColorSync but MeshRenderer was not found on " + parent.gameObject.name)) : null);
 
             return toy;
         }
 
-        private static LightSourceToy CreateLight(Transform parent, Color color, float intensity, float range, bool shadows)
+        private static LightSourceToy CreateLight(Light light)
         {
-            bool sync = false;
-            var meta = parent.GetComponentInParent<AssetMeta>();
+            var sync = false;
+            var meta = light.transform.GetComponentInParent<AssetMeta>();
             if (meta != null)
             {
-                var tmpParent = parent;
+                var tmpParent = light.transform;
                 while (tmpParent != null)
                 {
                     if (meta.MovableObjects.Contains(tmpParent.gameObject))
@@ -512,20 +517,24 @@ namespace Mistaken.CustomStructures
                 }
             }
 
-            return API.MapPlus.SpawnLight(parent, color, intensity, range, shadows, sync, sync ? (byte?)60 : null);
+            return API.Toys.ToyHandler.SpawnLight(light, sync, sync ? (byte?)60 : null);
         }
 
         private static GameObject CreateEmpty(Transform parent)
         {
-            GameObject tor = new GameObject();
-            tor.transform.parent = parent;
-            tor.transform.localPosition = Vector3.zero;
-            tor.transform.localRotation = Quaternion.identity;
-            tor.transform.localScale = Vector3.one;
-            return tor;
+            return new GameObject
+            {
+                transform =
+                {
+                    parent = parent,
+                    localPosition = Vector3.zero,
+                    localRotation = Quaternion.identity,
+                    localScale = Vector3.one,
+                },
+            };
         }
 
-        private static AdminToys.ShootingTarget SpawnShootingTarget(ShootingTargetType type, Vector3 position, Quaternion rotation, Vector3 scale)
+        private static ShootingTarget SpawnShootingTarget(ShootingTargetType type, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             AdminToyBase prefab;
             switch (type)
@@ -539,21 +548,21 @@ namespace Mistaken.CustomStructures
                 case ShootingTargetType.ClassD:
                     prefab = ShootingTargetObjectDBoy;
                     break;
+                case ShootingTargetType.Unknown:
                 default:
                     return null;
             }
 
-            AdminToyBase toy = UnityEngine.Object.Instantiate(prefab);
-            AdminToys.ShootingTarget ptoy = toy.GetComponent<AdminToys.ShootingTarget>();
-            ptoy.transform.position = position;
-            ptoy.transform.rotation = rotation;
-            ptoy.transform.localScale = scale;
-            ptoy.NetworkScale = ptoy.transform.lossyScale;
+            var toy = Object.Instantiate(prefab);
+            toy.transform.position = position;
+            toy.transform.rotation = rotation;
+            toy.transform.localScale = scale;
+            toy.NetworkScale = toy.transform.lossyScale;
             NetworkServer.Spawn(toy.gameObject);
 
-            ptoy.UpdatePositionServer();
+            toy.UpdatePositionServer();
 
-            return ptoy;
+            return toy.GetComponent<ShootingTarget>();
         }
     }
 }

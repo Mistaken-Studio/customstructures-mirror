@@ -11,7 +11,6 @@ using Exiled.API.Features;
 using Exiled.API.Interfaces;
 using MEC;
 using Mirror;
-using Mistaken.API;
 using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs.PathLights;
 using UnityEngine;
@@ -54,8 +53,6 @@ namespace Mistaken.CustomStructures.Pathlights
 
         private readonly HashSet<PathLightController> runningControllers = new HashSet<PathLightController>();
 
-        // ReSharper disable once IdentifierTypo
-        private readonly Dictionary<Room, RoomPathLightSynchronizerScript> synchronizers = new Dictionary<Room, RoomPathLightSynchronizerScript>();
         private readonly Dictionary<Room, PathLightController> controllers = new Dictionary<Room, PathLightController>();
 
         private bool enabled;
@@ -130,20 +127,7 @@ namespace Mistaken.CustomStructures.Pathlights
             this.decontaminationPath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
             this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
 
-            foreach (var item in this.controllers)
-            {
-                foreach (var script in item.Value.GetComponentsInChildren<LightSynchronizerScript>().ToArray())
-                {
-                    script.gameObject.AddComponent<PathLightSynchronizerScript>().Toy = script.Toy;
-                    Object.Destroy(script);
-                }
-
-                this.synchronizers[item.Key] = item.Key.gameObject.AddComponent<RoomPathLightSynchronizerScript>();
-            }
-
-            this.RunCoroutine(this.SynchronizationHandler(), nameof(this.SynchronizationHandler));
-
-            // this.EnablePath(this.nukePath);
+            this.EnablePath(this.nukePath);
         }
 
         private void RemovePathLightsFrom(params ZoneType[] zones)
@@ -164,7 +148,6 @@ namespace Mistaken.CustomStructures.Pathlights
                 foreach (var nid in item.GetComponentsInChildren<NetworkIdentity>())
                     NetworkServer.Destroy(nid.gameObject);
 
-                this.synchronizers.Remove(room);
                 this.controllers.Remove(room);
 
                 Object.Destroy(item.gameObject);
@@ -303,63 +286,6 @@ namespace Mistaken.CustomStructures.Pathlights
 
             while (this.runningControllers.Contains(me))
                 yield return Timing.WaitForSeconds(me.DoAnimationSingleCycle());
-        }
-
-        private IEnumerator<float> SynchronizationHandler()
-        {
-            yield return Timing.WaitForSeconds(1f);
-
-            Dictionary<Player, Room> lastRooms = new Dictionary<Player, Room>();
-
-            while (Round.IsStarted)
-            {
-                yield return Timing.WaitForSeconds(1f);
-
-                foreach (var player in RealPlayers.List)
-                {
-                    var curRoom = player.CurrentRoom;
-
-                    if (lastRooms.TryGetValue(player, out var lastRoom) && lastRoom == curRoom)
-                        continue; // Skip, room didn't change since last update
-
-                    lastRooms[player] = curRoom;
-
-                    var room = API.Utilities.Room.Get(curRoom);
-
-                    // Don't even check for Surface, Other because there are no lights
-                    if (room == null ||
-                        room.ExiledRoom.Zone == ZoneType.Surface ||
-                        room.ExiledRoom.Zone == ZoneType.Unspecified)
-                    {
-                        foreach (var item in this.synchronizers.Values)
-                            item.RemoveSubscriber(player);
-
-                        continue;
-                    }
-
-                    var otherRooms = room.FarNeighbors;
-
-                    HashSet<RoomPathLightSynchronizerScript> toSync = NorthwoodLib.Pools.HashSetPool<RoomPathLightSynchronizerScript>.Shared.Rent();
-
-                    if (this.synchronizers.TryGetValue(room.ExiledRoom, out var script))
-                        toSync.Add(script);
-
-                    // ReSharper disable once LoopCanBeConvertedToQuery
-                    foreach (var item in otherRooms)
-                    {
-                        if (this.synchronizers.TryGetValue(item.ExiledRoom, out script))
-                            toSync.Add(script);
-                    }
-
-                    foreach (var item in this.synchronizers.Values.Where(x => !toSync.Contains(x)))
-                        item.RemoveSubscriber(player);
-
-                    foreach (var item in toSync)
-                        item.AddSubscriber(player);
-
-                    NorthwoodLib.Pools.HashSetPool<RoomPathLightSynchronizerScript>.Shared.Return(toSync);
-                }
-            }
         }
     }
 }

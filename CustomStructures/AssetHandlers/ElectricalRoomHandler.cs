@@ -4,12 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Features;
 using InventorySystem.Items.Pickups;
-using MEC;
 using Mistaken.API;
 using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs;
@@ -57,7 +57,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.display.OnFinishCounting = null;
         }
 
-        public override void OnScriptTrigger(string name)
+        public override void OnScriptTrigger(string triggerName)
         {
             if (Round.ElapsedTime.TotalSeconds < 10)
                 return;
@@ -71,37 +71,38 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 this.SetLever();
             }
 
-            if (name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER")
+            if (this.lever is null)
+                throw new NullReferenceException($"{nameof(this.lever)} was null");
+
+            if (triggerName != "EZ_ELECTRICAL_ROOM_TESLA_LEVER")
+                return;
+
+            try
             {
-                try
+                this.currentState = !this.currentState;
+
+                this.lever.SetBool("Enabled", this.currentState);
+
+                if (this.currentState)
                 {
-                    this.currentState = !this.currentState;
-
-                    this.lever.SetBool("Enabled", this.currentState);
-
-                    if (this.currentState)
-                    {
-                        API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.ENABLED;
-                        Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES ENGAGED", false, false, true);
-                    }
-                    else
-                    {
-                        API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.DISABLED;
-                        Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES DISENGAGED", false, false, true);
-                    }
-
-                    this.cooldown = true;
-                    this.display.SetTime(300);
-                    this.display.OnFinishCounting = () => this.cooldown = false;
+                    API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.ENABLED;
+                    Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES ENGAGED", false, false, true);
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    Log.Error(ex);
-                    foreach (var item in RealPlayers.List.Where(x => Vector3.Distance(x.Position, this.transform.position) < 5))
-                    {
-                        item.Broadcast(5, "<color=red>Dzwignia jest zablokowana</color>");
-                    }
+                    API.Utilities.Map.TeslaMode = API.Utilities.TeslaMode.DISABLED;
+                    Respawning.RespawnEffectsController.PlayCassieAnnouncement("FACILITY WIDE OVERRIDE . TESLA GATES DISENGAGED", false, false, true);
                 }
+
+                this.cooldown = true;
+                this.display.SetTime(300);
+                this.display.OnFinishCounting = () => this.cooldown = false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex);
+                foreach (var item in RealPlayers.List.Where(x => Vector3.Distance(x.Position, this.transform.position) < 5))
+                    item.Broadcast(5, "<color=red>Dzwignia jest zablokowana</color>");
             }
         }
 
@@ -115,7 +116,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
         private TeslaGate[] teslas;
 
         private bool currentState = true;
-        private bool cooldown = false;
+        private bool cooldown;
 
         private void SetLever()
         {

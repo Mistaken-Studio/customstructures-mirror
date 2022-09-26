@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using AdminToys;
 using Exiled.API.Features;
 using MEC;
 using Mistaken.UnityPrefabs;
