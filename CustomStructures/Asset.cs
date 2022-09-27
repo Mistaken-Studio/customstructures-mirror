@@ -356,33 +356,9 @@ namespace Mistaken.CustomStructures
                 if (!transform.TryGetComponent(out MeshRenderer renderer))
                     continue;
 
-                PrimitiveType type;
+                var type = API.Toys.ToyHandler.GetPrimitiveType(filter);
+
                 var hasCollision = transform.TryGetComponent<Collider>(out _);
-
-                switch (filter.mesh.name)
-                {
-                    case "Plane Instance":
-                        type = PrimitiveType.Plane;
-                        break;
-                    case "Cylinder Instance":
-                        type = PrimitiveType.Cylinder;
-                        break;
-                    case "Cube Instance":
-                        type = PrimitiveType.Cube;
-                        break;
-                    case "Capsule Instance":
-                        type = PrimitiveType.Capsule;
-                        break;
-                    case "Quad Instance":
-                        type = PrimitiveType.Quad;
-                        break;
-                    case "Sphere Instance":
-                        type = PrimitiveType.Sphere;
-                        break;
-                    default:
-                        continue;
-                }
-
                 this.SpawnedChildren[prefabObject].Add(CreatePrimitive(
                     transform,
                     type,
