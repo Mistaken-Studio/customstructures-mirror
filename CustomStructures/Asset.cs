@@ -21,9 +21,6 @@ using Mistaken.UnityPrefabs;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-// Code "borrowed" from
-// https://github.com/Killers0992/AssetBundleLoader/blob/master/AssetBundleLoader/AssetBundlePrefab.cs
-// but modified to allow for spawning items, doors, shooting targets
 namespace Mistaken.CustomStructures
 {
     /// <summary>
