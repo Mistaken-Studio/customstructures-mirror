@@ -308,7 +308,7 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Log.Debug("Spawning BINARY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var target = SpawnShootingTarget(ShootingTargetType.Binary, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+                                var target = API.Toys.ToyHandler.SpawnShootingTarget(ShootingTargetType.Binary, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
@@ -318,7 +318,7 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Log.Debug("Spawning DBOY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var target = SpawnShootingTarget(ShootingTargetType.ClassD, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+                                var target = API.Toys.ToyHandler.SpawnShootingTarget(ShootingTargetType.ClassD, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
@@ -328,7 +328,7 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Log.Debug("Spawning SPORT_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var target = SpawnShootingTarget(ShootingTargetType.Sport, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+                                var target = API.Toys.ToyHandler.SpawnShootingTarget(ShootingTargetType.Sport, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
@@ -376,62 +376,6 @@ namespace Mistaken.CustomStructures
         internal static readonly HashSet<ItemPickupBase> RemovePostUseItem = new HashSet<ItemPickupBase>();
         internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
         internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
-
-        // ReSharper disable InconsistentNaming
-        private static ShootingTarget shootingTargetObject_binary;
-        private static ShootingTarget shootingTargetObject_sport;
-        private static ShootingTarget shootingTargetObject_dboy;
-
-        private static ShootingTarget ShootingTargetObjectBinary
-        {
-            get
-            {
-                if (shootingTargetObject_binary == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<ShootingTarget>(out var component) && component.name == "binaryTargetPrefab")
-                            shootingTargetObject_binary = component;
-                    }
-                }
-
-                return shootingTargetObject_binary;
-            }
-        }
-
-        private static ShootingTarget ShootingTargetObjectSport
-        {
-            get
-            {
-                if (shootingTargetObject_sport == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<ShootingTarget>(out var component) && component.name == "sportTargetPrefab")
-                            shootingTargetObject_sport = component;
-                    }
-                }
-
-                return shootingTargetObject_sport;
-            }
-        }
-
-        private static ShootingTarget ShootingTargetObjectDBoy
-        {
-            get
-            {
-                if (shootingTargetObject_dboy == null)
-                {
-                    foreach (var gameObject in NetworkClient.prefabs.Values)
-                    {
-                        if (gameObject.TryGetComponent<ShootingTarget>(out var component) && component.name == "dboyTargetPrefab")
-                            shootingTargetObject_dboy = component;
-                    }
-                }
-
-                return shootingTargetObject_dboy;
-            }
-        }
 
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color, bool hasCollision)
         {
@@ -505,37 +449,6 @@ namespace Mistaken.CustomStructures
                     localScale = Vector3.one,
                 },
             };
-        }
-
-        private static ShootingTarget SpawnShootingTarget(ShootingTargetType type, Vector3 position, Quaternion rotation, Vector3 scale)
-        {
-            AdminToyBase prefab;
-            switch (type)
-            {
-                case ShootingTargetType.Binary:
-                    prefab = ShootingTargetObjectBinary;
-                    break;
-                case ShootingTargetType.Sport:
-                    prefab = ShootingTargetObjectSport;
-                    break;
-                case ShootingTargetType.ClassD:
-                    prefab = ShootingTargetObjectDBoy;
-                    break;
-                case ShootingTargetType.Unknown:
-                default:
-                    return null;
-            }
-
-            var toy = Object.Instantiate(prefab);
-            toy.transform.position = position;
-            toy.transform.rotation = rotation;
-            toy.transform.localScale = scale;
-            toy.NetworkScale = toy.transform.lossyScale;
-            NetworkServer.Spawn(toy.gameObject);
-
-            toy.UpdatePositionServer();
-
-            return toy.GetComponent<ShootingTarget>();
         }
     }
 }
