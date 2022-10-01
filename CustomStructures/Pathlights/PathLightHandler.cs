@@ -106,7 +106,11 @@ namespace Mistaken.CustomStructures.Pathlights
                         this.ClearPath();
                     this.lockPathDecontamination = false;
 
-                    Timing.CallDelayed(30, () => this.RemovePathLightsFrom(ZoneType.LightContainment));
+                    Timing.CallDelayed(30, () =>
+                    {
+                        this.RemovePathLightsFrom(ZoneType.LightContainment);
+                        this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
+                    });
                     break;
             }
         }
