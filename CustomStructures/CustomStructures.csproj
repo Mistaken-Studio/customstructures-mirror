@@ -66,16 +66,11 @@
     <Compile Include="AssetHandlers\ElectricalRoomHandler.cs" />
     <Compile Include="AssetHandlers\RespawnTimerHandler.cs" />
     <Compile Include="AssetHandlers\WarheadTimerHandler.cs" />
-    <Compile Include="ColorSynchronizerScript.cs" />
     <Compile Include="Pathlights\PathLightHandler.cs" />
-    <Compile Include="LightSynchronizerScript.cs" />
-    <Compile Include="DestructionInformerScript.cs" />
     <Compile Include="AssetHandlers\SingleAssetHandler.cs" />
     <Compile Include="AssetHandlers\SurfaceGateATowerElevatorHandler.cs" />
     <Compile Include="LoadCommand.cs" />
     <Compile Include="CustomStructuresHandler.cs" />
-    <Compile Include="Pathlights\PathLightSynchronizerScript.cs" />
-    <Compile Include="Pathlights\RoomPathLightSynchronizerScript.cs" />
     <Compile Include="PluginHandler.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Features;
-using Exiled.API.Features.Items;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Pickups;
 using MEC;
@@ -28,23 +27,23 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
             this.bottomFloor = this.bottom.transform.Find("Floor");
             if (this.bottomFloor == null)
-                throw new ArgumentNullException("bottomFloor");
+                throw new NullReferenceException($"{nameof(this.bottomFloor)} was null");
 
             this.topFloor = this.top.transform.Find("Floor");
             if (this.topFloor == null)
-                throw new ArgumentNullException("topFloor");
+                throw new NullReferenceException($"{nameof(this.topFloor)} was null");
 
             this.offset = this.topFloor.transform.position - this.bottomFloor.transform.position;
 
             this.bottomDoor = asset.Doors[this.bottom.Find("Entrance").Find("HCZ_DOOR").gameObject];
 
             if (this.bottomDoor == null)
-                throw new ArgumentNullException("this.BottomDoor");
+                throw new NullReferenceException($"{nameof(this.bottomDoor)} was null");
 
             this.topDoor = asset.Doors[this.top.Find("Entrance").Find("HCZ_DOOR").gameObject];
 
             if (this.topDoor == null)
-                throw new ArgumentNullException("this.TopDoor");
+                throw new NullReferenceException($"{nameof(this.topDoor)} was null");
 
             this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.bottomDoor.NetworkTargetState = true;
@@ -72,8 +71,8 @@ namespace Mistaken.CustomStructures.AssetHandlers
         private DoorVariant bottomDoor;
         private DoorVariant topDoor;
 
-        private bool isOnTop = false;
-        private bool isMoving = false;
+        private bool isOnTop;
+        private bool isMoving;
 
         private IEnumerator<float> MoveUp()
         {
@@ -111,7 +110,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             var inRange = Physics.OverlapBox(this.bottomFloor.transform.position + Vector3.up, (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2), this.bottomFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
-                this.Move(item.gameObject, this.offset);
+                Move(item.gameObject, this.offset);
 
             yield return Timing.WaitForSeconds(2);
             this.topDoor.NetworkTargetState = true;
@@ -123,7 +122,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
         }
 
-        private void Move(GameObject item, Vector3 offset)
+        private static void Move(GameObject item, Vector3 offset)
         {
             if (item.TryGetComponent<ItemPickupBase>(out var pickup))
             {
@@ -170,7 +169,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             var inRange = Physics.OverlapBox(this.topFloor.transform.position + Vector3.up, (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2), this.topFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
-                this.Move(item.gameObject, -this.offset);
+                Move(item.gameObject, -this.offset);
 
             yield return Timing.WaitForSeconds(2);
 

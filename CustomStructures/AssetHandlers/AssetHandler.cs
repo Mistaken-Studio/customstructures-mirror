@@ -15,7 +15,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         public virtual bool IsColliding(AssetMeta.AssetType[] assets) => false;
 
-        public virtual void OnScriptTrigger(string name)
+        public virtual void OnScriptTrigger(string triggerName)
         {
         }
     }

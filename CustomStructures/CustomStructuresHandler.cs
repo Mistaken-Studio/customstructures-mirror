@@ -17,6 +17,7 @@ using Mistaken.API.Diagnostics;
 using Mistaken.CustomStructures.AssetHandlers;
 using Mistaken.UnityPrefabs;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Mistaken.CustomStructures
 {
@@ -138,13 +139,10 @@ namespace Mistaken.CustomStructures
         public static bool TryGetAsset(string name, out Asset asset)
         {
             asset = UnknownAssets.SingleOrDefault(x => x.Prefab.name == name);
-            if (asset is null)
-                return false;
-
-            return true;
+            return !(asset is null);
         }
 
-        /// <inheritdoc cref="Module.Module(IPlugin{IConfig})"/>
+        /// <inheritdoc cref="Module"/>
         public CustomStructuresHandler(IPlugin<IConfig> plugin)
             : base(plugin)
         {
@@ -158,7 +156,7 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
-            Mistaken.Events.Handlers.CustomEvents.RequestPickItem += this.CustomEvents_RequestPickItem;
+            Events.Handlers.CustomEvents.RequestPickItem += this.CustomEvents_RequestPickItem;
 
             ReloadAssets();
         }
@@ -168,26 +166,20 @@ namespace Mistaken.CustomStructures
         {
             Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
-            Mistaken.Events.Handlers.CustomEvents.RequestPickItem -= this.CustomEvents_RequestPickItem;
+            Events.Handlers.CustomEvents.RequestPickItem -= this.CustomEvents_RequestPickItem;
 
-            foreach (var asset in Assets)
+            foreach (var item in Assets.SelectMany(asset => asset.Value.SpawnedChildren))
             {
-                foreach (var item in asset.Value.SpawnedChildren)
-                {
-                    foreach (var item2 in item.Value)
-                        GameObject.Destroy(item2);
-                    GameObject.Destroy(item.Key);
-                }
+                foreach (var item2 in item.Value)
+                    Object.Destroy(item2);
+                Object.Destroy(item.Key);
             }
 
-            foreach (var asset in UnknownAssets)
+            foreach (var item in UnknownAssets.SelectMany(asset => asset.SpawnedChildren))
             {
-                foreach (var item in asset.SpawnedChildren)
-                {
-                    foreach (var item2 in item.Value)
-                        GameObject.Destroy(item2);
-                    GameObject.Destroy(item.Key);
-                }
+                foreach (var item2 in item.Value)
+                    Object.Destroy(item2);
+                Object.Destroy(item.Key);
             }
 
             Assets.Clear();
@@ -195,14 +187,15 @@ namespace Mistaken.CustomStructures
 
         internal static readonly Dictionary<AssetMeta.AssetType, Type> AssetsHandlers = new Dictionary<AssetMeta.AssetType, Type>();
 
-        private static IEnumerable<AssetBundle> LoadBoundles(string files)
+        private static IEnumerable<AssetBundle> LoadBundles(string files)
         {
-            List<AssetBundle> tor = new List<AssetBundle>();
-            foreach (var item in Directory.GetFiles(files).Where(x => !x.EndsWith(".manifest")))
-                tor.Add(AssetBundle.LoadFromFile(item));
+            List<AssetBundle> tor = Directory.GetFiles(files)
+                .Where(x => !x.EndsWith(".manifest"))
+                .Select(AssetBundle.LoadFromFile)
+                .ToList();
 
             foreach (var item in Directory.GetDirectories(files))
-                tor.AddRange(LoadBoundles(item));
+                tor.AddRange(LoadBundles(item));
 
             return tor;
         }
@@ -213,21 +206,21 @@ namespace Mistaken.CustomStructures
             {
                 Exiled.API.Features.Log.Warn($"{Path.Combine(Paths.Plugins, "AssetBoundle")} was not found, creating ...");
                 Directory.CreateDirectory(Path.Combine(Paths.Plugins, "AssetBoundle"));
-                return new GameObject[0];
+                return Array.Empty<GameObject>();
             }
 
-            var boundles = LoadBoundles(Path.Combine(Paths.Plugins, "AssetBoundle"));
+            var bundles = LoadBundles(Path.Combine(Paths.Plugins, "AssetBoundle")).ToArray();
             List<GameObject> assets = new List<GameObject>();
 
-            foreach (var boundle in boundles)
-                assets.AddRange(boundle.LoadAllAssets<GameObject>());
+            foreach (var bundle in bundles)
+                assets.AddRange(bundle.LoadAllAssets<GameObject>());
 
-            foreach (var boundle in boundles)
-                boundle.Unload(false);
+            foreach (var bundle in bundles)
+                bundle.Unload(false);
             return assets;
         }
 
-        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>> assetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandlers.AssetHandler>>();
+        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandler>> assetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandler>>();
 
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {
@@ -299,7 +292,8 @@ namespace Mistaken.CustomStructures
                 HashSet<AssetMeta.AssetType> spawned = new HashSet<AssetMeta.AssetType>();
                 foreach (var asset in Assets.Values)
                 {
-                    var meta = GameObject.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
+                    // ReSharper disable once UnusedVariable
+                    var meta = Object.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
 
                     foreach (var rule in asset.Meta.Rules)
                     {
@@ -321,28 +315,35 @@ namespace Mistaken.CustomStructures
                                 continue;
                         }
 
-                        GameObject parent = new GameObject();
-                        parent.transform.position = room.Position;
-                        parent.transform.rotation = room.transform.rotation;
+                        var parent = new GameObject
+                        {
+                            transform =
+                            {
+                                parent = room.transform,
+                                localPosition = Vector3.zero,
+                                localRotation = Quaternion.identity,
+                                localScale = Vector3.one,
+                            },
+                        };
 
                         var instance = asset.Spawn(parent.transform);
 
                         foreach (var assetsHandler in AssetsHandlers)
                         {
-                            if (assetsHandler.Key == asset.Meta.Type)
+                            if (assetsHandler.Key != asset.Meta.Type)
+                                continue;
+
+                            var handler = (AssetHandler)instance.AddComponent(assetsHandler.Value);
+
+                            this.CallDelayed(10, () =>
                             {
-                                var handler = (AssetHandlers.AssetHandler)instance.AddComponent(assetsHandler.Value);
+                                handler.Initialize(asset);
+                            });
 
-                                this.CallDelayed(10, () =>
-                                {
-                                    handler.Initialize(asset);
-                                });
-
-                                if (!this.assetHandlers.ContainsKey(assetsHandler.Key))
-                                    this.assetHandlers.Add(assetsHandler.Key, new List<AssetHandlers.AssetHandler>());
-                                this.assetHandlers[assetsHandler.Key].Add(handler);
-                                break;
-                            }
+                            if (!this.assetHandlers.ContainsKey(assetsHandler.Key))
+                                this.assetHandlers.Add(assetsHandler.Key, new List<AssetHandler>());
+                            this.assetHandlers[assetsHandler.Key].Add(handler);
+                            break;
                         }
 
                         Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.Type}", PluginHandler.Instance.Config.VerbouseOutput);
@@ -355,7 +356,8 @@ namespace Mistaken.CustomStructures
 
                 foreach (var asset in UnknownAssets)
                 {
-                    var meta = GameObject.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
+                    // ReSharper disable once UnusedVariable
+                    var meta = Object.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
 
                     foreach (var rule in asset.Meta.Rules)
                     {
@@ -377,11 +379,17 @@ namespace Mistaken.CustomStructures
                                 continue;
                         }
 
-                        GameObject parent = new GameObject();
-                        parent.transform.parent = room.transform;
-                        parent.transform.position = room.Position;
-                        parent.transform.rotation = room.transform.rotation;
+                        var parent = new GameObject
+                        {
+                            transform =
+                            {
+                                parent = room.transform,
+                                position = room.Position,
+                                rotation = room.transform.rotation,
+                            },
+                        };
 
+                        // ReSharper disable once UnusedVariable
                         var instance = asset.Spawn(parent.transform);
 
                         Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.name}", PluginHandler.Instance.Config.VerbouseOutput);

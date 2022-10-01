@@ -4,18 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using HarmonyLib;
 using Mistaken.CustomStructures.Pathlights;
-using Mirror;
-using Mistaken.API;
 using Mistaken.UnityPrefabs;
-using UnityEngine;
 
+// ReSharper disable StringLiteralTypo
 namespace Mistaken.CustomStructures
 {
     /// <inheritdoc/>
@@ -41,11 +36,11 @@ namespace Mistaken.CustomStructures
         {
             Instance = this;
 
-            this.harmony = new HarmonyLib.Harmony("mistaken.customstructures");
+            this.harmony = new Harmony("mistaken.customstructures");
             this.harmony.PatchAll();
 
-            new CustomStructuresHandler(this);
-            new PathLightHandler(this);
+            _ = new CustomStructuresHandler(this);
+            _ = new PathLightHandler(this);
 
             CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR] = typeof(AssetHandlers.SurfaceGateATowerElevatorHandler);
             CustomStructuresHandler.AssetsHandlers[AssetMeta.AssetType.WARHEAD_TIMER] = typeof(AssetHandlers.WarheadTimerHandler);
