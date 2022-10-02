@@ -27,12 +27,12 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Assets bound to their type.
         /// </summary>
-        public static readonly Dictionary<AssetMeta.AssetType, Asset> Assets = new Dictionary<AssetMeta.AssetType, Asset>();
+        public static readonly Dictionary<AssetMeta.AssetType, Asset> Assets = new();
 
         /// <summary>
         /// Unidentified Assets.
         /// </summary>
-        public static readonly List<Asset> UnknownAssets = new List<Asset>();
+        public static readonly List<Asset> UnknownAssets = new();
 
         /// <summary>
         /// Reloads <see cref="Assets"/> and <see cref="UnknownAssets"/>.
@@ -185,7 +185,7 @@ namespace Mistaken.CustomStructures
             Assets.Clear();
         }
 
-        internal static readonly Dictionary<AssetMeta.AssetType, Type> AssetsHandlers = new Dictionary<AssetMeta.AssetType, Type>();
+        internal static readonly Dictionary<AssetMeta.AssetType, Type> AssetsHandlers = new();
 
         private static IEnumerable<AssetBundle> LoadBundles(string files)
         {
@@ -220,7 +220,7 @@ namespace Mistaken.CustomStructures
             return assets;
         }
 
-        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandler>> assetHandlers = new Dictionary<AssetMeta.AssetType, List<AssetHandler>>();
+        private readonly Dictionary<AssetMeta.AssetType, List<AssetHandler>> assetHandlers = new();
 
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {

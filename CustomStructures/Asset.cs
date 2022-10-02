@@ -31,12 +31,12 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Gets spawned objects bound to top asset.
         /// </summary>
-        public Dictionary<GameObject, List<GameObject>> SpawnedChildren { get; } = new Dictionary<GameObject, List<GameObject>>();
+        public Dictionary<GameObject, List<GameObject>> SpawnedChildren { get; } = new();
 
         /// <summary>
         /// Gets objects bound to doors.
         /// </summary>
-        public Dictionary<GameObject, DoorVariant> Doors { get; } = new Dictionary<GameObject, DoorVariant>();
+        public Dictionary<GameObject, DoorVariant> Doors { get; } = new();
 
         /// <summary>
         /// Gets or sets asset meta.
@@ -46,7 +46,7 @@ namespace Mistaken.CustomStructures
         /// <summary>
         /// Gets or sets number of spawned this round.
         /// </summary>
-        public int Spawned { get; set; } = 0;
+        public int Spawned { get; set; }
 
         /// <summary>
         /// Gets or sets asset prefab.
@@ -308,7 +308,7 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Log.Debug("Spawning BINARY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var target = API.Toys.ToyHandler.SpawnShootingTarget(ShootingTargetType.Binary, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+                                var target = Toy.API.ToyHandler.SpawnShootingTarget(ShootingTargetType.Binary, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
@@ -318,7 +318,7 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Log.Debug("Spawning DBOY_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var target = API.Toys.ToyHandler.SpawnShootingTarget(ShootingTargetType.ClassD, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+                                var target = Toy.API.ToyHandler.SpawnShootingTarget(ShootingTargetType.ClassD, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
@@ -328,7 +328,7 @@ namespace Mistaken.CustomStructures
                             {
                                 transform.gameObject.SetActive(false);
                                 Log.Debug("Spawning SPORT_TARGET", PluginHandler.Instance.Config.VerbouseOutput);
-                                var target = API.Toys.ToyHandler.SpawnShootingTarget(ShootingTargetType.Sport, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
+                                var target = Toy.API.ToyHandler.SpawnShootingTarget(ShootingTargetType.Sport, tor.transform.position, tor.transform.rotation, tor.transform.lossyScale);
 
                                 this.SpawnedChildren[prefabObject].Add(target.gameObject);
                                 break;
@@ -353,7 +353,7 @@ namespace Mistaken.CustomStructures
                 if (!transform.TryGetComponent(out MeshRenderer renderer))
                     continue;
 
-                var type = API.Toys.ToyHandler.GetPrimitiveType(filter);
+                var type = Toy.API.ToyHandler.GetPrimitiveType(filter);
 
                 var hasCollision = transform.TryGetComponent<Collider>(out _);
                 this.SpawnedChildren[prefabObject].Add(CreatePrimitive(
@@ -366,16 +366,16 @@ namespace Mistaken.CustomStructures
             return prefabObject;
         }
 
-        internal static readonly Dictionary<DoorVariant, AnimatorTrigger> ConnectedDoorAnimators = new Dictionary<DoorVariant, AnimatorTrigger>();
-        internal static readonly Dictionary<ItemPickupBase, AnimatorTrigger> ConnectedItemAnimators = new Dictionary<ItemPickupBase, AnimatorTrigger>();
+        internal static readonly Dictionary<DoorVariant, AnimatorTrigger> ConnectedDoorAnimators = new();
+        internal static readonly Dictionary<ItemPickupBase, AnimatorTrigger> ConnectedItemAnimators = new();
 
-        internal static readonly Dictionary<DoorVariant, ScriptTrigger> ConnectedDoorScriptTriggers = new Dictionary<DoorVariant, ScriptTrigger>();
-        internal static readonly Dictionary<ItemPickupBase, ScriptTrigger> ConnectedItemScriptTriggers = new Dictionary<ItemPickupBase, ScriptTrigger>();
+        internal static readonly Dictionary<DoorVariant, ScriptTrigger> ConnectedDoorScriptTriggers = new();
+        internal static readonly Dictionary<ItemPickupBase, ScriptTrigger> ConnectedItemScriptTriggers = new();
 
-        internal static readonly HashSet<DoorVariant> RemovePostUse = new HashSet<DoorVariant>();
-        internal static readonly HashSet<ItemPickupBase> RemovePostUseItem = new HashSet<ItemPickupBase>();
-        internal static readonly HashSet<DoorVariant> LockPostUse = new HashSet<DoorVariant>();
-        internal static readonly HashSet<Transform> HighUpdateRate = new HashSet<Transform>();
+        internal static readonly HashSet<DoorVariant> RemovePostUse = new();
+        internal static readonly HashSet<ItemPickupBase> RemovePostUseItem = new();
+        internal static readonly HashSet<DoorVariant> LockPostUse = new();
+        internal static readonly HashSet<Transform> HighUpdateRate = new();
 
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color, bool hasCollision)
         {
@@ -403,7 +403,7 @@ namespace Mistaken.CustomStructures
                 }
             }
 
-            var toy = API.Toys.ToyHandler.SpawnPrimitive(
+            var toy = Toy.API.ToyHandler.SpawnPrimitive(
                 type,
                 parent,
                 color,
@@ -434,7 +434,7 @@ namespace Mistaken.CustomStructures
                 }
             }
 
-            return API.Toys.ToyHandler.SpawnLight(light, sync, sync ? (byte?)60 : null);
+            return Toy.API.ToyHandler.SpawnLight(light, sync, sync ? (byte?)60 : null);
         }
 
         private static GameObject CreateEmpty(Transform parent)
