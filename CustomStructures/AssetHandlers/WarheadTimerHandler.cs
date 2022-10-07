@@ -43,18 +43,25 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         private IEnumerator<float> UpdateTimer()
         {
+            yield return Timing.WaitForSeconds(.5f);
+
             while (Warhead.IsInProgress && !Warhead.IsDetonated)
             {
-                try
-                {
-                    this.display.SetText(Mathf.RoundToInt(Warhead.DetonationTimer).ToString());
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    this.display.SetText("99");
-                }
+                this.UpdateText();
 
                 yield return Timing.WaitForSeconds(1);
+            }
+        }
+
+        private void UpdateText()
+        {
+            try
+            {
+                this.display.SetText(Mathf.RoundToInt(Warhead.DetonationTimer).ToString());
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                this.display.SetText("99");
             }
         }
 
@@ -68,14 +75,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             if (!ev.IsAllowed)
                 return;
 
-            try
-            {
-                this.display.SetText(Mathf.RoundToInt(Warhead.DetonationTimer).ToString());
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                this.display.SetText("99");
-            }
+            this.UpdateText();
         }
 
         private void Warhead_Stopping(Exiled.Events.EventArgs.StoppingEventArgs ev)
@@ -83,14 +83,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             if (!ev.IsAllowed)
                 return;
 
-            try
-            {
-                this.display.SetText(Mathf.RoundToInt(Warhead.DetonationTimer).ToString());
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                this.display.SetText("99");
-            }
+            this.UpdateText();
         }
 
         private void Warhead_Starting(Exiled.Events.EventArgs.StartingEventArgs ev)

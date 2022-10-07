@@ -61,6 +61,17 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.SURFACE_GATEA_TOWER_ELEVATOR;
 
+        private static void Move(GameObject item, Vector3 offset)
+        {
+            if (item.TryGetComponent<ItemPickupBase>(out var pickup))
+            {
+                pickup.transform.position += offset;
+                pickup.RefreshPositionAndRotation();
+            }
+            else if (item.TryGetComponent<ReferenceHub>(out var rh))
+                rh.playerMovementSync.ForcePosition(rh.playerMovementSync.RealModelPosition + offset);
+        }
+
         private Transform bottom;
         private Transform top;
 
@@ -107,7 +118,10 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.bottomFloor.transform.position + Vector3.up, (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2), this.bottomFloor.transform.rotation);
+            var inRange = Physics.OverlapBox(
+                this.bottomFloor.transform.position + Vector3.up,
+                (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2),
+                this.bottomFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
                 Move(item.gameObject, this.offset);
@@ -120,17 +134,6 @@ namespace Mistaken.CustomStructures.AssetHandlers
             this.isMoving = false;
             this.bottomDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
             this.topDoor.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-        }
-
-        private static void Move(GameObject item, Vector3 offset)
-        {
-            if (item.TryGetComponent<ItemPickupBase>(out var pickup))
-            {
-                pickup.transform.position += offset;
-                pickup.RefreshPositionAndRotation();
-            }
-            else if (item.TryGetComponent<ReferenceHub>(out var rh))
-                rh.playerMovementSync.ForcePosition(rh.playerMovementSync.RealModelPosition + offset);
         }
 
         private IEnumerator<float> MoveDown()
@@ -166,7 +169,10 @@ namespace Mistaken.CustomStructures.AssetHandlers
                 yield break;
             }
 
-            var inRange = Physics.OverlapBox(this.topFloor.transform.position + Vector3.up, (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2), this.topFloor.transform.rotation);
+            var inRange = Physics.OverlapBox(
+                this.topFloor.transform.position + Vector3.up,
+                (this.bottomFloor.transform.lossyScale / 2.2f) + (Vector3.up * 2),
+                this.topFloor.transform.rotation);
 
             foreach (var item in inRange.Where(x => !x.isTrigger).Select(x => x.transform.root.gameObject).ToHashSet())
                 Move(item.gameObject, -this.offset);
@@ -186,17 +192,14 @@ namespace Mistaken.CustomStructures.AssetHandlers
         {
             if (!ev.IsAllowed)
                 return;
-            if (ev.Door.Base == this.bottomDoor || ev.Door.Base == this.topDoor)
-            {
-                ev.IsAllowed = false;
-                if (!this.isMoving)
-                {
-                    if (this.isOnTop)
-                        Timing.RunCoroutine(this.MoveDown());
-                    else
-                        Timing.RunCoroutine(this.MoveUp());
-                }
-            }
+
+            if (ev.Door.Base != this.bottomDoor && ev.Door.Base != this.topDoor)
+                return;
+
+            ev.IsAllowed = false;
+
+            if (!this.isMoving)
+                Timing.RunCoroutine(this.isOnTop ? this.MoveDown() : this.MoveUp());
         }
     }
 }

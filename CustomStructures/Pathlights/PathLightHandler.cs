@@ -51,9 +51,9 @@ namespace Mistaken.CustomStructures.Pathlights
             Exiled.Events.Handlers.Warhead.Detonated += this.Warhead_Detonated;
         }
 
-        private readonly HashSet<PathLightController> runningControllers = new HashSet<PathLightController>();
+        private readonly HashSet<PathLightController> runningControllers = new();
 
-        private readonly Dictionary<Room, PathLightController> controllers = new Dictionary<Room, PathLightController>();
+        private readonly Dictionary<Room, PathLightController> controllers = new();
 
         private bool enabled;
         private bool lockPathDecontamination;

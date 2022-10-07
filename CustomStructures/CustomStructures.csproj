@@ -11,6 +11,7 @@
     <RootNamespace>Mistaken.CustomStructures</RootNamespace>
     <AssemblyName>Mistaken.CustomStructures</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <LangVersion>9.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -38,6 +39,7 @@
     <Reference Include="Exiled.API" HintPath="$(MISTAKEN_REFERENCES)\Exiled.API.dll" />
     <Reference Include="Exiled.Events" HintPath="$(MISTAKEN_REFERENCES)\Exiled.Events.dll" />
     <Reference Include="Mistaken.Events" HintPath="$(MISTAKEN_REFERENCES)\Mistaken.Events.dll" />
+    <Reference Include="Mistaken.Toy.API" HintPath="$(MISTAKEN_REFERENCES)\Mistaken.Toy.API.dll" />
     <Reference Include="Mistaken.UnityPrefabs" HintPath="$(MISTAKEN_REFERENCES)\Mistaken.UnityPrefabs.dll" />
     <Reference Include="Mistaken.Updater" HintPath="$(MISTAKEN_REFERENCES)\Mistaken.Updater.dll" />
     <Reference Include="0Mistaken.API" HintPath="$(MISTAKEN_REFERENCES)\0Mistaken.API.dll" />

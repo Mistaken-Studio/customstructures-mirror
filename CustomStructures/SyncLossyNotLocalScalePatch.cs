@@ -10,9 +10,10 @@ using HarmonyLib;
 using NorthwoodLib.Pools;
 using UnityEngine;
 
+// ReSharper disable UnusedParameter.Global
+// ReSharper disable UnusedMember.Global
 namespace Mistaken.CustomStructures
 {
-    // ReSharper disable UnusedMember.Global
     [HarmonyPatch(typeof(AdminToys.AdminToyBase), nameof(AdminToys.AdminToyBase.UpdatePositionServer))]
     internal static class SyncLossyNotLocalScalePatch
     {

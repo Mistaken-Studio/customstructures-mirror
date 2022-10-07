@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Features;
-using InventorySystem.Items.Pickups;
 using Mistaken.API;
 using Mistaken.API.Diagnostics;
 using Mistaken.UnityPrefabs;
@@ -29,7 +28,7 @@ namespace Mistaken.CustomStructures.AssetHandlers
             if (this.lever is null || this.display is null)
                 this.Invoke(nameof(this.SetLever), 5);
 
-            this.triggerItem = Asset.ConnectedItemScriptTriggers.Single(x => x.Value.Name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER").Key;
+            _ = Asset.ConnectedItemScriptTriggers.Single(x => x.Value.Name == "EZ_ELECTRICAL_ROOM_TESLA_LEVER").Key;
 
             this.electricalBox = this.GetComponentInChildren<ElectricalBoxScript>();
 
@@ -108,10 +107,9 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         protected override AssetMeta.AssetType AssetType => AssetMeta.AssetType.EZ_ELECTRICALROOM;
 
-        private readonly HashSet<TeslaGate> suppresedTeslas = new HashSet<TeslaGate>();
+        private readonly HashSet<TeslaGate> suppresedTeslas = new();
         private Animator lever;
         private TimerSegmentScript display;
-        private ItemPickupBase triggerItem;
         private ElectricalBoxScript electricalBox;
         private TeslaGate[] teslas;
 
@@ -139,8 +137,8 @@ namespace Mistaken.CustomStructures.AssetHandlers
 
         private IEnumerator UpdateLight(TeslaGate teslaGate)
         {
-            int index = this.teslas.IndexOf(teslaGate);
-            while (true)
+            var index = this.teslas.IndexOf(teslaGate);
+            while (this.enabled)
             {
                 yield return new WaitForSeconds(1);
 
