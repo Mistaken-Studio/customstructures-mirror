@@ -295,13 +295,15 @@ namespace Mistaken.CustomStructures
         {
             var rooms = Room.List.ToArray();
             rooms.ShuffleList();
+
+            foreach (var asset in Assets.Values)
+                asset.Reset();
+
             foreach (var room in rooms)
             {
                 HashSet<AssetMeta.AssetType> spawned = new();
                 foreach (var asset in Assets.Values)
                 {
-                    asset.Reset();
-
                     foreach (var rule in asset.Meta.Rules)
                     {
                         if ((RoomType)rule.Room != room.Type)
