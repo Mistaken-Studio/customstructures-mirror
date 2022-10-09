@@ -377,6 +377,13 @@ namespace Mistaken.CustomStructures
         internal static readonly HashSet<DoorVariant> LockPostUse = new();
         internal static readonly HashSet<Transform> HighUpdateRate = new();
 
+        internal void Reset()
+        {
+            this.Spawned = 0;
+            this.SpawnedChildren.Clear();
+            this.Doors.Clear();
+        }
+
         private static PrimitiveObjectToy CreatePrimitive(Transform parent, PrimitiveType type, Color color, bool hasCollision)
         {
             bool sync = false;

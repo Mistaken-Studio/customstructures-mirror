@@ -300,6 +300,8 @@ namespace Mistaken.CustomStructures
                 HashSet<AssetMeta.AssetType> spawned = new();
                 foreach (var asset in Assets.Values)
                 {
+                    asset.Reset();
+
                     foreach (var rule in asset.Meta.Rules)
                     {
                         if ((RoomType)rule.Room != room.Type)
@@ -361,6 +363,8 @@ namespace Mistaken.CustomStructures
 
                 foreach (var asset in UnknownAssets)
                 {
+                    asset.Reset();
+
                     foreach (var rule in asset.Meta.Rules)
                     {
                         if ((RoomType)rule.Room != room.Type)
