@@ -11,6 +11,7 @@ using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Interfaces;
+using JetBrains.Annotations;
 using MEC;
 using Mirror;
 using Mistaken.API.Diagnostics;
@@ -22,6 +23,7 @@ using Object = UnityEngine.Object;
 namespace Mistaken.CustomStructures
 {
     /// <inheritdoc/>
+    [PublicAPI]
     public class CustomStructuresHandler : Module
     {
         /// <summary>
@@ -39,8 +41,15 @@ namespace Mistaken.CustomStructures
         /// </summary>
         public static void ReloadAssets()
         {
+            foreach (var asset in Assets.Values.ToArray())
+                Object.Destroy(asset.Prefab);
+
+            foreach (var asset in UnknownAssets.ToArray())
+                Object.Destroy(asset.Prefab);
+
             Assets.Clear();
             UnknownAssets.Clear();
+
             foreach (var asset in GetAssets())
             {
                 var meta = asset.GetComponent<AssetMeta>();
@@ -139,7 +148,7 @@ namespace Mistaken.CustomStructures
         public static bool TryGetAsset(string name, out Asset asset)
         {
             asset = UnknownAssets.SingleOrDefault(x => x.Prefab.name == name);
-            return !(asset is null);
+            return asset is not null;
         }
 
         /// <inheritdoc cref="Module"/>
@@ -210,7 +219,7 @@ namespace Mistaken.CustomStructures
             }
 
             var bundles = LoadBundles(Path.Combine(Paths.Plugins, "AssetBoundle")).ToArray();
-            List<GameObject> assets = new List<GameObject>();
+            List<GameObject> assets = new();
 
             foreach (var bundle in bundles)
                 assets.AddRange(bundle.LoadAllAssets<GameObject>());
@@ -279,7 +288,6 @@ namespace Mistaken.CustomStructures
             Asset.ConnectedItemAnimators.Clear();
             Asset.ConnectedItemScriptTriggers.Clear();
 
-            ReloadAssets();
             this.RunCoroutine(this.LoadAssets());
         }
 
@@ -287,14 +295,15 @@ namespace Mistaken.CustomStructures
         {
             var rooms = Room.List.ToArray();
             rooms.ShuffleList();
+
+            foreach (var asset in Assets.Values)
+                asset.Reset();
+
             foreach (var room in rooms)
             {
-                HashSet<AssetMeta.AssetType> spawned = new HashSet<AssetMeta.AssetType>();
+                HashSet<AssetMeta.AssetType> spawned = new();
                 foreach (var asset in Assets.Values)
                 {
-                    // ReSharper disable once UnusedVariable
-                    var meta = Object.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
-
                     foreach (var rule in asset.Meta.Rules)
                     {
                         if ((RoomType)rule.Room != room.Type)
@@ -356,8 +365,7 @@ namespace Mistaken.CustomStructures
 
                 foreach (var asset in UnknownAssets)
                 {
-                    // ReSharper disable once UnusedVariable
-                    var meta = Object.Instantiate(asset.Prefab).GetComponent<AssetMeta>();
+                    asset.Reset();
 
                     foreach (var rule in asset.Meta.Rules)
                     {
@@ -389,8 +397,7 @@ namespace Mistaken.CustomStructures
                             },
                         };
 
-                        // ReSharper disable once UnusedVariable
-                        var instance = asset.Spawn(parent.transform);
+                        asset.Spawn(parent.transform);
 
                         Exiled.API.Features.Log.Debug($"Loaded {asset.Meta.name}", PluginHandler.Instance.Config.VerbouseOutput);
 
