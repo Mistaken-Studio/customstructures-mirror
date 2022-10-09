@@ -109,7 +109,7 @@ namespace Mistaken.CustomStructures.Pathlights
                     Timing.CallDelayed(30, () =>
                     {
                         this.RemovePathLightsFrom(ZoneType.LightContainment);
-                        this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
+                        this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type is RoomType.EzGateA or RoomType.EzGateB).ToArray());
                     });
                     break;
             }
@@ -117,7 +117,8 @@ namespace Mistaken.CustomStructures.Pathlights
 
         private void Server_RoundStarted()
         {
-            if (CustomStructuresHandler.UnknownAssets.Any(x => !(x.Meta.GetComponentInChildren<PathLightController>() is null)))
+            if (CustomStructuresHandler.UnknownAssets.Any(
+                    x => x.Meta.GetComponentInChildren<PathLightController>() is not null))
                 this.enabled = true;
             else
             {
@@ -128,8 +129,21 @@ namespace Mistaken.CustomStructures.Pathlights
             this.PreparePathLightDict();
             this.ClearPath();
 
-            this.decontaminationPath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB).ToArray());
-            this.nukePath = this.PreGeneratePath(Room.List.Where(x => x.Type == RoomType.LczChkpA || x.Type == RoomType.LczChkpB || x.Type == RoomType.EzGateA || x.Type == RoomType.EzGateB).ToArray());
+            this.decontaminationPath = this.PreGeneratePath(
+                Room.List.Where(
+                    x => x.Type
+                        is RoomType.LczChkpA
+                        or RoomType.LczChkpB)
+                    .ToArray());
+
+            this.nukePath = this.PreGeneratePath(
+                Room.List.Where(
+                        x => x.Type
+                            is RoomType.LczChkpA
+                            or RoomType.LczChkpB
+                            or RoomType.EzGateA
+                            or RoomType.EzGateB)
+                    .ToArray());
 
             // this.EnablePath(this.nukePath);
         }
@@ -186,9 +200,9 @@ namespace Mistaken.CustomStructures.Pathlights
         {
             var tor = new Dictionary<PathLightController, PathLightController.Side>();
 
-            HashSet<API.Utilities.Room> checkedRooms = new HashSet<API.Utilities.Room>();
+            HashSet<API.Utilities.Room> checkedRooms = new();
 
-            Dictionary<API.Utilities.Room, Dictionary<API.Utilities.Room, API.Utilities.Room[]>> checkRooms = new Dictionary<API.Utilities.Room, Dictionary<API.Utilities.Room, API.Utilities.Room[]>>();
+            Dictionary<API.Utilities.Room, Dictionary<API.Utilities.Room, API.Utilities.Room[]>> checkRooms = new();
 
             foreach (var item in rooms)
             {
@@ -224,7 +238,7 @@ namespace Mistaken.CustomStructures.Pathlights
 
                         if (this.controllers.TryGetValue(room.ExiledRoom, out var lights))
                         {
-                            if (room.ExiledRoom.Type == RoomType.HczChkpA || room.ExiledRoom.Type == RoomType.HczChkpB)
+                            if (room.ExiledRoom.Type is RoomType.HczChkpA or RoomType.HczChkpB)
                                 tor[lights] = PathLightController.Side.SPECIAL;
                             else
                             {

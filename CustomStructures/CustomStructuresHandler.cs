@@ -11,6 +11,7 @@ using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Interfaces;
+using JetBrains.Annotations;
 using MEC;
 using Mirror;
 using Mistaken.API.Diagnostics;
@@ -22,6 +23,7 @@ using Object = UnityEngine.Object;
 namespace Mistaken.CustomStructures
 {
     /// <inheritdoc/>
+    [PublicAPI]
     public class CustomStructuresHandler : Module
     {
         /// <summary>
@@ -139,7 +141,7 @@ namespace Mistaken.CustomStructures
         public static bool TryGetAsset(string name, out Asset asset)
         {
             asset = UnknownAssets.SingleOrDefault(x => x.Prefab.name == name);
-            return !(asset is null);
+            return asset is not null;
         }
 
         /// <inheritdoc cref="Module"/>
@@ -210,7 +212,7 @@ namespace Mistaken.CustomStructures
             }
 
             var bundles = LoadBundles(Path.Combine(Paths.Plugins, "AssetBoundle")).ToArray();
-            List<GameObject> assets = new List<GameObject>();
+            List<GameObject> assets = new();
 
             foreach (var bundle in bundles)
                 assets.AddRange(bundle.LoadAllAssets<GameObject>());
@@ -289,7 +291,7 @@ namespace Mistaken.CustomStructures
             rooms.ShuffleList();
             foreach (var room in rooms)
             {
-                HashSet<AssetMeta.AssetType> spawned = new HashSet<AssetMeta.AssetType>();
+                HashSet<AssetMeta.AssetType> spawned = new();
                 foreach (var asset in Assets.Values)
                 {
                     // ReSharper disable once UnusedVariable
