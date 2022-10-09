@@ -288,7 +288,6 @@ namespace Mistaken.CustomStructures
             Asset.ConnectedItemAnimators.Clear();
             Asset.ConnectedItemScriptTriggers.Clear();
 
-            ReloadAssets();
             this.RunCoroutine(this.LoadAssets());
         }
 
